@@ -42,7 +42,7 @@ class BboxDistanceMetric(object):
 
 
 def bbox_overlaps(bboxes1, bboxes2, mode='siwd', is_aligned=False, eps=1e-6, constant=12.8 , weight=2, img_shape=(512, 640)):
-    assert mode in ['iou', 'iof', 'giou', 'normalized_giou', 'ciou', 'diou', 'nwd', 'siwd',
+    assert mode in ['iou', 'iof', 'giou', 'normalized_giou', 'ciou', 'diou', 'nwd', 'nwd_hybrid', 'siwd',
                     'dotd','box1_box2','focaliou2', 'focaliou3',
                     'swdv2', 'center_distance', 'center_distance2', 'kl', 'gwd', 'bcd', 'gjsd'], f'Unsupported mode {mode}'
     # Either the boxes are empty or the length of boxes's last dimenstion is 4
@@ -192,10 +192,33 @@ def bbox_overlaps(bboxes1, bboxes2, mode='siwd', is_aligned=False, eps=1e-6, con
         wh_distance = ((w1 - w2) ** 2 + (h1 - h2) ** 2) / (weight**2)
 
         wassersteins = torch.sqrt(center_distance + wh_distance)
-        # constant = 11.7
-        normalized_wasserstein = torch.exp(-wassersteins/constant)
-
+        normalized_wasserstein = torch.exp(-wassersteins / constant)
         return normalized_wasserstein
+
+    if mode == 'nwd_hybrid':
+        center1 = (bboxes1[..., :, None, :2] + bboxes1[..., :, None, 2:]) / 2
+        center2 = (bboxes2[..., None, :, :2] + bboxes2[..., None, :, 2:]) / 2
+        whs = center1[..., :2] - center2[..., :2]
+        center_distance = whs[..., 0] * whs[..., 0] + whs[..., 1] * whs[..., 1] + eps
+
+        w1 = bboxes1[..., :, None, 2] - bboxes1[..., :, None, 0] + eps
+        h1 = bboxes1[..., :, None, 3] - bboxes1[..., :, None, 1] + eps
+        w2 = bboxes2[..., None, :, 2] - bboxes2[..., None, :, 0] + eps
+        h2 = bboxes2[..., None, :, 3] - bboxes2[..., None, :, 1] + eps
+
+        wh_distance = ((w1 - w2) ** 2 + (h1 - h2) ** 2) / (weight**2)
+        wassersteins = torch.sqrt(center_distance + wh_distance)
+        nwd = torch.exp(-wassersteins / constant)
+
+        # Standard IoU calculation
+        lt = torch.max(bboxes1[..., :, None, :2], bboxes2[..., None, :, :2])
+        rb = torch.min(bboxes1[..., :, None, 2:], bboxes2[..., None, :, 2:])
+        wh = (rb - lt).clamp(min=0)
+        overlap = wh[..., 0] * wh[..., 1]
+        union = area1[..., None] + area2[..., None, :] - overlap + eps
+        iou = overlap / union
+
+        return 0.5 * nwd + 0.5 * iou
 
 
 

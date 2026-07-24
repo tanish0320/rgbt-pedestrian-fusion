@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmdet.core import bbox2result, multi_apply
+from mmcv.ops import DeformConv2d
 
 
 @DETECTORS.register_module()
@@ -20,6 +21,11 @@ class QFDet(SingleStageDetector):
                  quality_attention=True,
                  poolupsample=None,
                  reweight=False,
+                 use_dam=False,
+                 use_fsf=False,
+                 use_scale_gate=False,
+                 use_modality_dropout=False,
+                 modality_dropout_ratio=0.2,
                  train_cfg=None,
                  test_cfg=None,
                  pretrained=None,
@@ -40,11 +46,42 @@ class QFDet(SingleStageDetector):
         self.quality_attention = quality_attention
 
         self.reweight = reweight
+        self.rgb_only = test_cfg.get('rgb_only', False) if test_cfg is not None else False
+        self.thermal_only = test_cfg.get('thermal_only', False) if test_cfg is not None else False
+
+        self.use_dam = use_dam
+        self.use_fsf = use_fsf
+        self.use_scale_gate = use_scale_gate
+        self.use_modality_dropout = use_modality_dropout
+        self.modality_dropout_ratio = modality_dropout_ratio
+
+        if self.use_dam:
+            self.dam = nn.ModuleList([
+                DeformableAlignmentModule(neck['out_channels'])
+                for _ in range(5)
+            ])
+        if self.use_fsf:
+            self.fsf = nn.ModuleList([
+                FrequencySelectiveFusion(neck['out_channels'])
+                for _ in range(5)
+            ])
+        if self.use_scale_gate:
+            self.scale_gates = nn.ModuleList([
+                ScaleAdaptiveGating(neck['out_channels'])
+                for _ in range(5)
+            ])
 
     def extract_feat(self, img):
         """Directly extract features from the backbone+neck."""
         # self.iter = self.iter + 1
-        v_img, t_img = img
+        if isinstance(img, torch.Tensor):
+            v_img, t_img = img, img
+        else:
+            v_img, t_img = img
+        if hasattr(self, 'rgb_only') and self.rgb_only:
+            t_img = torch.zeros_like(t_img)
+        elif hasattr(self, 'thermal_only') and self.thermal_only:
+            v_img = torch.zeros_like(v_img)
         v_feats = self.backbone(v_img)
         t_feats = self.backbone_t(t_img)
         if self.with_neck:
@@ -175,6 +212,20 @@ class QFDet(SingleStageDetector):
         for i in range(num_level):
             x_t = x_ts[i]
             x_v = x_vs[i]
+
+            # Modality Dropout (Only during training)
+            if self.training and hasattr(self, 'use_modality_dropout') and self.use_modality_dropout:
+                p = torch.rand(1).item()
+                if p < self.modality_dropout_ratio:
+                    x_v = torch.zeros_like(x_v)
+                elif p < 2 * self.modality_dropout_ratio:
+                    x_t = torch.zeros_like(x_t)
+
+            # Deformable Cross-Modal Alignment (DAM)
+            if hasattr(self, 'use_dam') and self.use_dam:
+                x_t = self.dam[i](x_t, x_v)
+
+            # Quality-Aware Attention
             if self.quality_attention:
                 quality_pred_t = torch.max(quality_t[i], dim=1, keepdim=True)[0]
                 quality_pred_v = torch.max(quality_v[i], dim=1, keepdim=True)[0]
@@ -184,11 +235,17 @@ class QFDet(SingleStageDetector):
                 x_t = (1 + quality_pred_t) * x_t
                 x_v = (1 + quality_pred_v) * x_v            
             
+            # Pooling / Upsampling
             if self.poolupsample is not None and i < num_level-1:
                 x_v = self.poolupsample(x_v)
-                # x_t = self.poolupsample(x_t)
 
-            fused_x_ = self.fuse(x_t, x_v, self.base_fusion)
+            # Fusion strategies: FSF, Scale-Gate, or Standard
+            if hasattr(self, 'use_fsf') and self.use_fsf:
+                fused_x_ = self.fsf[i](x_t, x_v)
+            elif hasattr(self, 'use_scale_gate') and self.use_scale_gate:
+                fused_x_ = self.scale_gates[i](x_t, x_v)
+            else:
+                fused_x_ = self.fuse(x_t, x_v, self.base_fusion)
 
             fused_x.append(fused_x_)
 
@@ -388,3 +445,56 @@ class PoolingUpsample(nn.Module):
         # import pdb; pdb.set_trace()
         x = self.conv1x1(torch.cat((x, x_), 1))
         return x
+
+
+class DeformableAlignmentModule(nn.Module):
+    def __init__(self, channels):
+        super(DeformableAlignmentModule, self).__init__()
+        self.offset_conv = nn.Conv2d(2 * channels, 2 * 9, kernel_size=3, padding=1)
+        self.dcn = DeformConv2d(channels, channels, kernel_size=3, padding=1, bias=False)
+        self.init_weights()
+
+    def init_weights(self):
+        nn.init.constant_(self.offset_conv.weight, 0.0)
+        nn.init.constant_(self.offset_conv.bias, 0.0)
+
+    def forward(self, source, guide):
+        concat = torch.cat([source, guide], dim=1)
+        offsets = self.offset_conv(concat)
+        aligned = self.dcn(source, offsets)
+        return aligned
+
+
+class FrequencySelectiveFusion(nn.Module):
+    def __init__(self, channels):
+        super(FrequencySelectiveFusion, self).__init__()
+        self.channels = channels
+
+    def forward(self, x_t, x_v):
+        low_t = F.avg_pool2d(x_t, kernel_size=3, stride=1, padding=1)
+        low_v = F.avg_pool2d(x_v, kernel_size=3, stride=1, padding=1)
+        
+        high_t = x_t - low_t
+        high_v = x_v - low_v
+        
+        low_fused = (low_t + low_v) / 2
+        high_fused = torch.max(high_t, high_v)
+        
+        return low_fused + high_fused
+
+
+class ScaleAdaptiveGating(nn.Module):
+    def __init__(self, channels):
+        super(ScaleAdaptiveGating, self).__init__()
+        self.gate_conv = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(2 * channels, 2, kernel_size=1),
+            nn.Softmax(dim=1)
+        )
+
+    def forward(self, x_t, x_v):
+        concat = torch.cat([x_t, x_v], dim=1)
+        gate = self.gate_conv(concat)
+        w_t = gate[:, 0:1, :, :]
+        w_v = gate[:, 1:2, :, :]
+        return w_t * x_t + w_v * x_v

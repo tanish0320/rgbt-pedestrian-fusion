@@ -100,12 +100,12 @@ model = dict(
 
 # dataset settings
 dataset_type = 'VTUAVdet'
-data_root = '/home/zhangy/data/VTUAV-det/'
+data_root = 'data/vtuav-det/'
 img_norm_cfg = dict(
     mean_list=([83.20, 92.24, 97.70], [134.84, 134.84, 134.84]),
     std_list=([57.77, 57.41, 57.69], [81.58, 81.58, 81.58]), to_rgb=True)
 train_pipeline = [
-    dict(type='LoadImagePairFromFile', spectrals=('visible', 'thermal')),
+    dict(type='LoadImagePairFromFile', spectrals=('VTUAV_co/train/images', 'VTUAV_ir/train/images')),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(type='Resize', img_scale=(640, 512), keep_ratio=True),
     dict(type='RandomFlip', flip_ratio=0.5),
@@ -114,8 +114,23 @@ train_pipeline = [
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
 ]
+val_pipeline = [
+    dict(type='LoadImagePairFromFile', spectrals=('VTUAV_co/val/images', 'VTUAV_ir/val/images')),
+    dict(
+        type='MultiScaleFlipAug',
+        img_scale=(640, 512),
+        flip=False,
+        transforms=[
+            dict(type='Resize', keep_ratio=True),
+            dict(type='RandomFlip'),
+            dict(type='MultiNormalize', **img_norm_cfg),
+            dict(type='Pad', size_divisor=32),
+            dict(type='DefaultFormatBundle'),
+            dict(type='Collect', keys=['img']),
+        ])
+]
 test_pipeline = [
-    dict(type='LoadImagePairFromFile', spectrals=('visible', 'thermal')),
+    dict(type='LoadImagePairFromFile', spectrals=('VTUAV_co/test/images', 'VTUAV_ir/test/images')),
     dict(
         type='MultiScaleFlipAug',
         img_scale=(640, 512),
@@ -134,18 +149,18 @@ data = dict(
     workers_per_gpu=4,
     train=dict(
         type=dataset_type,
-        ann_file=data_root + 'train_ir.json',
-        img_prefix=data_root + 'train/',
+        ann_file=data_root + 'annotations/train.json',
+        img_prefix=data_root,
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
-        ann_file=data_root + 'val_ir.json',
-        img_prefix=data_root + 'test/',
-        pipeline=test_pipeline),
+        ann_file=data_root + 'annotations/val.json',
+        img_prefix=data_root,
+        pipeline=val_pipeline),
     test=dict(
         type=dataset_type,
-        ann_file=data_root + 'val_ir.json',
-        img_prefix=data_root + 'test/',
+        ann_file=data_root + 'annotations/test.json',
+        img_prefix=data_root,
         pipeline=test_pipeline))
 evaluation = dict(interval=1, metric='bbox')
 

@@ -1,0 +1,158 @@
+{
+    "qfdet": {
+        "val": {
+            "rgb": {
+                "split": "val",
+                "mode": "rgb",
+                "fps": 9.56,
+                "inf_time_ms": 104.6,
+                "mAP": 0.053,
+                "mAP50": 0.219,
+                "mAP75": 0.005,
+                "mAPS": 0.018,
+                "mAPM": 0.061,
+                "mAPL": 0.075
+            },
+            "thermal": {
+                "split": "val",
+                "mode": "thermal",
+                "fps": 9.51,
+                "inf_time_ms": 105.12,
+                "mAP": 0.29,
+                "mAP50": 0.61,
+                "mAP75": 0.24,
+                "mAPS": 0.099,
+                "mAPM": 0.272,
+                "mAPL": 0.578
+            },
+            "fusion": {
+                "split": "val",
+                "mode": "fusion",
+                "fps": 9.6,
+                "inf_time_ms": 104.12,
+                "mAP": 0.338,
+                "mAP50": 0.721,
+                "mAP75": 0.273,
+                "mAPS": 0.144,
+                "mAPM": 0.325,
+                "mAPL": 0.585
+            }
+        },
+        "test": {
+            "rgb": {
+                "split": "test",
+                "mode": "rgb",
+                "fps": 9.46,
+                "inf_time_ms": 105.7,
+                "mAP": 0.046,
+                "mAP50": 0.206,
+                "mAP75": 0.004,
+                "mAPS": 0.02,
+                "mAPM": 0.056,
+                "mAPL": 0.079
+            },
+            "thermal": {
+                "split": "test",
+                "mode": "thermal",
+                "fps": 9.15,
+                "inf_time_ms": 109.34,
+                "mAP": 0.253,
+                "mAP50": 0.572,
+                "mAP75": 0.187,
+                "mAPS": 0.094,
+                "mAPM": 0.252,
+                "mAPL": 0.532
+            },
+            "fusion": {
+                "split": "test",
+                "mode": "fusion",
+                "fps": 9.57,
+                "inf_time_ms": 104.46,
+                "mAP": 0.299,
+                "mAP50": 0.674,
+                "mAP75": 0.227,
+                "mAPS": 0.129,
+                "mAPM": 0.299,
+                "mAPL": 0.554
+            }
+        }
+    },
+    "qfdet_star": {
+        "val": {
+            "rgb": {
+                "split": "val",
+                "mode": "rgb",
+                "fps": 5.4,
+                "inf_time_ms": 185.1,
+                "mAP": 0.047,
+                "mAP50": 0.201,
+                "mAP75": 0.007,
+                "mAPS": 0.025,
+                "mAPM": 0.051,
+                "mAPL": 0.125
+            },
+            "thermal": {
+                "split": "val",
+                "mode": "thermal",
+                "fps": 5.49,
+                "inf_time_ms": 182.31,
+                "mAP": 0.313,
+                "mAP50": 0.669,
+                "mAP75": 0.258,
+                "mAPS": 0.159,
+                "mAPM": 0.295,
+                "mAPL": 0.589
+            },
+            "fusion": {
+                "split": "val",
+                "mode": "fusion",
+                "fps": 5.41,
+                "inf_time_ms": 184.69,
+                "mAP": 0.351,
+                "mAP50": 0.754,
+                "mAP75": 0.286,
+                "mAPS": 0.192,
+                "mAPM": 0.334,
+                "mAPL": 0.589
+            }
+        },
+        "test": {
+            "rgb": {
+                "split": "test",
+                "mode": "rgb",
+                "fps": 5.58,
+                "inf_time_ms": 179.28,
+                "mAP": 0.049,
+                "mAP50": 0.201,
+                "mAP75": 0.005,
+                "mAPS": 0.032,
+                "mAPM": 0.054,
+                "mAPL": 0.1
+            },
+            "thermal": {
+                "split": "test",
+                "mode": "thermal",
+                "fps": 5.55,
+                "inf_time_ms": 180.24,
+                "mAP": 0.289,
+                "mAP50": 0.657,
+                "mAP75": 0.208,
+                "mAPS": 0.157,
+                "mAPM": 0.287,
+                "mAPL": 0.554
+            },
+            "fusion": {
+                "split": "test",
+                "mode": "fusion",
+                "fps": 5.56,
+                "inf_time_ms": 179.77,
+                "mAP": 0.327,
+                "mAP50": 0.742,
+                "mAP75": 0.245,
+                "mAPS": 0.194,
+                "mAPM": 0.322,
+                "mAPL": 0.557
+            }
+        }
+    }
+}
