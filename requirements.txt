@@ -1,0 +1,10 @@
+# Install torch/torchvision/mmcv-full FIRST per README.md (CUDA-version-specific,
+# not listed here) — then:  pip install -r requirements.txt
+mmdet==2.25.1
+numpy<2
+opencv-python<4.10
+scipy
+gdown
+pycocotools
+matplotlib
+terminaltables

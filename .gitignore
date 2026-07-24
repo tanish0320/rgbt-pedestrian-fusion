@@ -1,0 +1,25 @@
+# Dataset (634MB, obtain from organizers — see README)
+data/
+
+# Model checkpoints (463MB+ — pretrained weights, trained outputs)
+checkpoints/
+
+# Eval prediction pickles/JSON (regenerate with tools/test.py — see README)
+results/preds/
+
+# Python
+__pycache__/
+*.pyc
+
+# Large generic upstream demo notebooks bundled with the vendored QFDet repo —
+# not modified by us, unrelated to this project's work (~30MB combined).
+third_party/mmdet-rgbtdroneperson/demo/MMDet_Tutorial.ipynb
+third_party/mmdet-rgbtdroneperson/demo/MMDet_InstanceSeg_Tutorial.ipynb
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/

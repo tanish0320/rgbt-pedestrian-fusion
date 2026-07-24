@@ -1,0 +1,1884 @@
+<title>VTUAV-det — Why Fusion</title>
+<style>
+/* ============================================================
+   TOKENS
+   ============================================================ */
+:root {
+  --bg: #F7F6F3;
+  --bg-raised: #FFFFFF;
+  --ink: #1B1D22;
+  --ink-soft: #4A4E5A;
+  --ink-faint: #7C8194;
+  --line: #DCDAD2;
+  --thermal: #E85D1F;
+  --thermal-dim: #C24E19;
+  --dusk: #3D5A80;
+  --dusk-dim: #2E4763;
+  --s-small: #eb6834;
+  --s-med: #1baf7a;
+  --s-large: #2a78d6;
+  --code-bg: #ECEAE3;
+  --shadow: 0 1px 2px rgba(27,29,34,0.06), 0 8px 24px -12px rgba(27,29,34,0.18);
+}
+
+:root[data-theme="dark"] {
+  --bg: #0C0E11;
+  --bg-raised: #15171C;
+  --ink: #EDEEF1;
+  --ink-soft: #A8ADBB;
+  --ink-faint: #6B7080;
+  --line: #262A33;
+  --thermal: #FF7A33;
+  --thermal-dim: #E85D1F;
+  --dusk: #6E9BD1;
+  --dusk-dim: #557FB0;
+  --s-small: #d95926;
+  --s-med: #199e70;
+  --s-large: #3987e5;
+  --code-bg: #1B1E24;
+  --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 12px 32px -16px rgba(0,0,0,0.6);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0C0E11;
+    --bg-raised: #15171C;
+    --ink: #EDEEF1;
+    --ink-soft: #A8ADBB;
+    --ink-faint: #6B7080;
+    --line: #262A33;
+    --thermal: #FF7A33;
+    --thermal-dim: #E85D1F;
+    --dusk: #6E9BD1;
+    --dusk-dim: #557FB0;
+    --s-small: #d95926;
+    --s-med: #199e70;
+    --s-large: #3987e5;
+    --code-bg: #1B1E24;
+    --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 12px 32px -16px rgba(0,0,0,0.6);
+  }
+}
+
+@font-face {
+  font-family: 'Barlow Condensed';
+  src: url(data:font/ttf;base64,__FONT_BARLOW700__) format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Source Serif 4';
+  src: url(data:font/ttf;base64,__FONT_SOURCESERIF400__) format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url(data:font/ttf;base64,__FONT_JBMONO400__) format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url(data:font/ttf;base64,__FONT_JBMONO500__) format('truetype');
+  font-weight: 500 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Source Serif 4', Georgia, serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+h1, h2, h3, .display {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  text-wrap: balance;
+  margin: 0;
+}
+.mono {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+a { color: inherit; }
+button { font-family: inherit; cursor: pointer; }
+
+::selection { background: var(--thermal); color: #0C0E11; }
+
+/* ============================================================
+   TOP LABEL BAR
+   ============================================================ */
+.topbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px clamp(20px, 4vw, 48px);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  mix-blend-mode: difference;
+  pointer-events: none;
+}
+.topbar span { color: var(--ink-faint); }
+
+/* ============================================================
+   TAB BAR
+   ============================================================ */
+.tabbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 60;
+  display: flex; justify-content: center;
+  padding: 12px clamp(20px, 4vw, 48px) 0;
+  pointer-events: none;
+}
+.tabbar-inner {
+  pointer-events: auto;
+  display: flex; gap: 2px;
+  background: rgba(12,14,17,0.6);
+  border: 1px solid rgba(255,255,255,0.12);
+  backdrop-filter: blur(14px);
+  border-radius: 20px;
+  padding: 3px;
+}
+.tab-btn {
+  border: none; background: transparent;
+  padding: 7px 18px;
+  border-radius: 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #A8ADBB;
+  transition: background 200ms, color 200ms;
+}
+.tab-btn:hover { color: #EDEEF1; }
+.tab-btn[aria-selected="true"] {
+  background: var(--thermal);
+  color: #050607;
+  font-weight: 600;
+}
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ============================================================
+   HERO — PAGE 1
+   ============================================================ */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 96px clamp(20px, 4vw, 48px) 64px;
+  overflow: hidden;
+  background: #050607;
+}
+.hero-media {
+  position: absolute; inset: 0;
+}
+.hero-media img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  object-position: center 30%;
+}
+.hero-media .rgb-layer { opacity: 1; transition: opacity 900ms cubic-bezier(.4,0,.2,1); }
+.hero-media .ir-layer { opacity: 0; transition: opacity 900ms cubic-bezier(.4,0,.2,1); filter: contrast(1.05); }
+.hero-media.show-ir .rgb-layer { opacity: 0; }
+.hero-media.show-ir .ir-layer { opacity: 1; }
+.hero-scrim {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(5,6,7,0.15) 0%, rgba(5,6,7,0.25) 40%, rgba(5,6,7,0.92) 100%);
+}
+.hero-boxes { position: absolute; inset: 0; pointer-events: none; }
+
+.hero-toggle {
+  position: absolute; top: 96px; right: clamp(20px, 4vw, 48px);
+  z-index: 5;
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(12,14,17,0.55);
+  border: 1px solid rgba(255,255,255,0.14);
+  backdrop-filter: blur(12px);
+  border-radius: 3px;
+  padding: 8px 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #C8CCD6;
+}
+.hero-toggle .dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--thermal);
+  box-shadow: 0 0 8px var(--thermal);
+  transition: background 300ms, box-shadow 300ms;
+}
+.hero-toggle button {
+  background: none; border: none; color: inherit; font: inherit;
+  padding: 2px 6px; border-radius: 2px;
+  transition: color 200ms;
+}
+.hero-toggle button[aria-pressed="true"] { color: var(--thermal); font-weight: 600; }
+.hero-toggle .sep { color: rgba(255,255,255,0.25); }
+
+.hero-content { position: relative; z-index: 3; max-width: 920px; }
+.hero-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--thermal);
+  margin-bottom: 18px;
+  display: flex; align-items: center; gap: 10px;
+}
+.hero-eyebrow::before {
+  content: ''; width: 24px; height: 1px; background: var(--thermal);
+}
+.hero-title {
+  font-size: clamp(40px, 7vw, 92px);
+  line-height: 0.94;
+  color: #F4F1EA;
+}
+.hero-title em {
+  font-style: normal;
+  color: var(--thermal);
+}
+.hero-sub {
+  font-family: 'Source Serif 4', serif;
+  font-size: clamp(16px, 1.6vw, 19px);
+  line-height: 1.65;
+  color: #C8CCD6;
+  max-width: 60ch;
+  margin-top: 28px;
+}
+.hero-caption {
+  margin-top: 22px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  color: #8890A0;
+  letter-spacing: 0.03em;
+}
+
+.hero-scroll-cue {
+  position: absolute; bottom: 28px; left: clamp(20px, 4vw, 48px);
+  z-index: 3;
+  display: flex; align-items: center; gap: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #8890A0;
+}
+.hero-scroll-cue .chevrons { display: flex; flex-direction: column; gap: 2px; }
+.hero-scroll-cue svg { animation: bob 1.8s ease-in-out infinite; }
+.hero-scroll-cue svg:nth-child(2) { animation-delay: 0.15s; }
+@keyframes bob { 0%,100%{ transform: translateY(0); opacity:.4;} 50%{ transform: translateY(4px); opacity:1;} }
+
+/* ============================================================
+   STAT STRIP
+   ============================================================ */
+.stat-strip {
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+  padding: 72px clamp(20px, 4vw, 48px) 80px;
+}
+.stat-strip-inner { max-width: 1320px; margin: 0 auto; }
+.stat-strip-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 24px; flex-wrap: wrap;
+  margin-bottom: 48px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 20px;
+}
+.stat-strip-head h2 {
+  font-size: clamp(26px, 3vw, 36px);
+  color: var(--ink);
+}
+.stat-strip-head p {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  max-width: 34ch;
+  text-align: right;
+}
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+}
+.stat-card {
+  background: var(--bg-raised);
+  padding: 28px 24px 24px;
+  display: flex; flex-direction: column; gap: 10px;
+  min-height: 190px;
+}
+.stat-card .stat-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.stat-card .stat-value {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 46px;
+  line-height: 1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.stat-card .stat-value .unit {
+  font-size: 20px;
+  color: var(--ink-faint);
+  margin-left: 4px;
+}
+.stat-card .stat-detail {
+  font-size: 14px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+  margin-top: auto;
+}
+.stat-card.accent .stat-value { color: var(--thermal); }
+.stat-card .spark {
+  display: flex; align-items: flex-end; gap: 3px; height: 28px; margin-top: 2px;
+}
+.spark i {
+  display: block; width: 12px; background: var(--line); border-radius: 1px 1px 0 0;
+}
+.spark i.on { background: var(--thermal); }
+
+@media (max-width: 860px) {
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ============================================================
+   COMPLEMENTARITY SECTION (2 proof panels)
+   ============================================================ */
+.proof-section {
+  background: var(--bg);
+  padding: 0 clamp(20px, 4vw, 48px) 88px;
+}
+.proof-inner { max-width: 1320px; margin: 0 auto; }
+.proof-heading {
+  display: flex; align-items: baseline; gap: 16px; margin-bottom: 40px;
+}
+.proof-heading .num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px; color: var(--thermal);
+}
+.proof-heading h2 { font-size: clamp(24px, 2.8vw, 32px); }
+
+.proof-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  margin-bottom: 28px;
+}
+.proof-panel { background: var(--bg-raised); }
+.proof-panel figure { margin: 0; position: relative; }
+.proof-panel img { width: 100%; display: block; aspect-ratio: 16/9; object-fit: cover; }
+.proof-panel figcaption {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-top: 1px solid var(--line);
+  color: var(--ink-faint);
+}
+.proof-panel figcaption .modality-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.proof-panel figcaption .modality-tag .dot { width: 6px; height: 6px; border-radius: 50%; }
+.proof-panel.rgb figcaption .dot { background: var(--dusk); }
+.proof-panel.ir figcaption .dot { background: var(--thermal); }
+.proof-note {
+  font-size: 15px; line-height: 1.7; color: var(--ink-soft);
+  max-width: 72ch;
+}
+.proof-note b { color: var(--ink); font-weight: 600; }
+
+@media (max-width: 760px) {
+  .proof-pair { grid-template-columns: 1fr; }
+}
+
+/* ============================================================
+   TRANSITION SEAM
+   ============================================================ */
+.seam {
+  position: relative;
+  height: 56vh;
+  min-height: 380px;
+  background: linear-gradient(180deg, var(--bg) 0%, #050607 100%);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+:root[data-theme="light"] .seam,
+:root:not([data-theme="dark"]) .seam {
+  background: linear-gradient(180deg, var(--bg) 0%, #050607 100%);
+}
+.seam-text {
+  position: relative; z-index: 2;
+  text-align: center;
+  color: #F4F1EA;
+}
+.seam-text .display {
+  font-size: clamp(28px, 4vw, 48px);
+  line-height: 1.1;
+}
+.seam-text .display em { color: var(--thermal); font-style: normal; }
+.seam-text p {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: #8890A0; margin-top: 16px;
+}
+.seam-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(232,93,31,0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(232,93,31,0.06) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at center, black, transparent 75%);
+}
+
+/* ============================================================
+   EXPLORER — PAGE 2
+   ============================================================ */
+.explorer {
+  background: #050607;
+  color: #EDEEF1;
+  padding: 24px clamp(20px, 4vw, 48px) 100px;
+  min-height: 100vh;
+}
+.explorer-head {
+  max-width: 1400px; margin: 0 auto 32px;
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 24px; flex-wrap: wrap;
+  border-bottom: 1px solid #262A33;
+  padding-bottom: 24px;
+}
+.explorer-head h2 {
+  font-size: clamp(26px, 3vw, 36px);
+  color: #F4F1EA;
+}
+.explorer-head .explorer-desc {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px; letter-spacing: 0.04em; text-transform: uppercase;
+  color: #6B7080; max-width: 40ch;
+}
+
+.explorer-controls {
+  max-width: 1400px; margin: 0 auto 28px;
+  display: flex; align-items: center; gap: 28px; flex-wrap: wrap;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+}
+.control-group { display: flex; align-items: center; gap: 8px; }
+.control-group .control-label {
+  color: #6B7080; letter-spacing: 0.06em; text-transform: uppercase; font-size: 10.5px;
+  margin-right: 4px;
+}
+.chip {
+  padding: 6px 13px;
+  border: 1px solid #2A2E38;
+  border-radius: 3px;
+  background: transparent;
+  color: #A8ADBB;
+  letter-spacing: 0.04em;
+  transition: border-color 180ms, color 180ms, background 180ms;
+}
+.chip:hover { border-color: #454B59; color: #EDEEF1; }
+.chip[aria-pressed="true"] {
+  border-color: var(--thermal); color: var(--thermal); background: rgba(232,93,31,0.08);
+}
+.chip .swatch { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+
+.explorer-grid {
+  max-width: 1400px; margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+.card {
+  background: #101216;
+  border: 1px solid #1F222A;
+  border-radius: 4px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 200ms, transform 200ms;
+  position: relative;
+}
+.card:hover, .card:focus-visible { border-color: #3D4250; transform: translateY(-2px); }
+.card:focus-visible { outline: 2px solid var(--thermal); outline-offset: 2px; }
+.card-media { position: relative; aspect-ratio: 16/9; overflow: hidden; background: #050607; }
+.card-media img {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+  transition: opacity 250ms;
+}
+.card-media .card-ir { opacity: 0; }
+.card:hover .card-media .card-ir, .card:focus-visible .card-media .card-ir { opacity: 1; }
+.card-meta {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  color: #7C8194;
+}
+.card-meta .split-tag {
+  padding: 2px 6px; border-radius: 2px;
+  text-transform: uppercase; font-size: 9.5px; letter-spacing: 0.08em;
+  background: #1B1E24; color: #A8ADBB;
+}
+.card-meta .ped-count { color: #EDEEF1; }
+.card-sizedots { display: flex; gap: 3px; padding: 0 12px 10px; }
+.card-sizedots i { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+
+.empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 64px 20px;
+  color: #6B7080;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+
+/* Detail panel */
+.detail-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(5,6,7,0.86);
+  backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  opacity: 0; pointer-events: none;
+  transition: opacity 220ms ease;
+}
+.detail-overlay.open { opacity: 1; pointer-events: auto; }
+.detail-panel {
+  background: #101216;
+  border: 1px solid #262A33;
+  border-radius: 6px;
+  max-width: 1040px; width: 100%;
+  max-height: 88vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 64px -20px rgba(0,0,0,0.7);
+  transform: translateY(12px) scale(0.98);
+  transition: transform 220ms ease;
+}
+.detail-overlay.open .detail-panel { transform: translateY(0) scale(1); }
+.detail-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 22px;
+  border-bottom: 1px solid #262A33;
+  position: sticky; top: 0; background: #101216; z-index: 2;
+}
+.detail-header .file {
+  font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #EDEEF1;
+}
+.detail-header .file .split-tag {
+  font-size: 9.5px; padding: 2px 6px; border-radius: 2px;
+  background: #1B1E24; color: #A8ADBB; text-transform: uppercase;
+  letter-spacing: 0.08em; margin-right: 10px;
+}
+.detail-close {
+  background: none; border: 1px solid #2A2E38; color: #A8ADBB;
+  width: 32px; height: 32px; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color 180ms, color 180ms;
+}
+.detail-close:hover { border-color: var(--thermal); color: var(--thermal); }
+
+.detail-media { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: #262A33; }
+.detail-media .panel { position: relative; background: #050607; }
+.detail-media img { width: 100%; display: block; }
+.detail-media .tag {
+  position: absolute; top: 10px; left: 10px; z-index: 2;
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.08em;
+  text-transform: uppercase; padding: 4px 8px; border-radius: 2px;
+  background: rgba(5,6,7,0.7); color: #EDEEF1;
+}
+.detail-boxes { position: absolute; inset: 0; }
+.detail-box { position: absolute; border: 1.5px solid; }
+.detail-box.S { border-color: var(--s-small); }
+.detail-box.M { border-color: var(--s-med); }
+.detail-box.L { border-color: var(--s-large); }
+
+.detail-footer {
+  display: flex; align-items: center; gap: 28px; flex-wrap: wrap;
+  padding: 16px 22px;
+  font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #A8ADBB;
+}
+.detail-footer .legend { display: flex; align-items: center; gap: 8px; }
+.detail-footer .legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+
+/* Footer */
+.page-footer {
+  max-width: 1400px; margin: 56px auto 0;
+  padding-top: 24px;
+  border-top: 1px solid #1F222A;
+  display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+  color: #4A4E5A; letter-spacing: 0.04em;
+}
+
+@media (max-width: 640px) {
+  .detail-media { grid-template-columns: 1fr; }
+  .stat-grid { grid-template-columns: 1fr; }
+  .hero-toggle { top: auto; bottom: 96px; right: 20px; }
+}
+
+/* ============================================================
+   STATISTICS PANEL
+   ============================================================ */
+.stats-page {
+  background: #050607;
+  color: #EDEEF1;
+  min-height: 100vh;
+  padding: 96px clamp(20px, 4vw, 48px) 80px;
+}
+.stats-inner { max-width: 1320px; margin: 0 auto; }
+.stats-header { margin-bottom: 40px; max-width: 68ch; }
+.stats-header h2 {
+  font-size: clamp(28px, 3.4vw, 40px);
+  color: #F4F1EA;
+  margin-bottom: 14px;
+}
+.stats-header p {
+  font-family: 'Source Serif 4', serif;
+  font-size: 15px; line-height: 1.7; color: #A8ADBB;
+}
+
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: #262A33;
+  border: 1px solid #262A33;
+  margin-bottom: 48px;
+}
+.kpi-tile { background: #101216; padding: 22px 20px; display: flex; flex-direction: column; gap: 8px; }
+.kpi-label {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  letter-spacing: 0.06em; text-transform: uppercase; color: #6B7080;
+}
+.kpi-value { font-size: 34px; font-weight: 600; color: #EDEEF1; }
+.kpi-value.accent { color: var(--thermal); }
+.kpi-unit { font-size: 16px; color: #6B7080; margin-left: 3px; }
+.kpi-sub { font-size: 11.5px; color: #6B7080; font-family: 'JetBrains Mono', monospace; }
+
+.chart-card {
+  background: #101216;
+  border: 1px solid #1F222A;
+  border-radius: 6px;
+  padding: 28px clamp(18px, 3vw, 32px) 24px;
+  margin-bottom: 24px;
+}
+.chart-card-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 20px; flex-wrap: wrap; margin-bottom: 24px;
+}
+.chart-card-head h3 {
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.01em;
+  font-size: 20px; color: #F4F1EA; margin-bottom: 6px;
+}
+.chart-card-head p {
+  font-family: 'Source Serif 4', serif; font-size: 13.5px; line-height: 1.6;
+  color: #8890A0; max-width: 58ch;
+}
+.chart-legend { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+.legend-item {
+  display: flex; align-items: center; gap: 7px;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #A8ADBB;
+  white-space: nowrap;
+}
+.legend-item i { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
+
+/* stacked bar */
+.stackbar-chart { display: flex; flex-direction: column; gap: 16px; margin-bottom: 20px; }
+.stackbar-row { display: flex; align-items: center; gap: 14px; }
+.stackbar-row .row-label {
+  width: 72px; flex-shrink: 0;
+  font-family: 'JetBrains Mono', monospace; font-size: 12px;
+  text-transform: uppercase; letter-spacing: 0.04em; color: #A8ADBB;
+}
+.stackbar-track {
+  flex: 1; height: 32px; border-radius: 3px; overflow: hidden;
+  display: flex; background: #050607;
+}
+.stackbar-seg {
+  height: 100%; position: relative;
+  display: flex; align-items: center; justify-content: center;
+  border-right: 2px solid #050607;
+  transition: filter 150ms;
+}
+.stackbar-seg:last-child { border-right: none; }
+.stackbar-seg:hover { filter: brightness(1.15); }
+.stackbar-seg .seg-label {
+  font-family: 'JetBrains Mono', monospace; font-size: 10.5px; font-weight: 600;
+  color: #050607; text-shadow: none;
+}
+.stackbar-row .row-total {
+  width: 56px; flex-shrink: 0; text-align: right;
+  font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #6B7080;
+}
+
+/* chart data table */
+.chart-table-wrap { overflow-x: auto; }
+.chart-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.chart-table th, .chart-table td {
+  padding: 8px 12px; text-align: right;
+  font-family: 'JetBrains Mono', monospace;
+  font-variant-numeric: tabular-nums;
+  border-bottom: 1px solid #1F222A;
+  white-space: nowrap;
+}
+.chart-table th:first-child, .chart-table td:first-child { text-align: left; color: #A8ADBB; }
+.chart-table th {
+  color: #6B7080; font-weight: 500; text-transform: uppercase;
+  font-size: 10.5px; letter-spacing: 0.05em;
+}
+.chart-table td { color: #EDEEF1; }
+
+/* shift chart (paired bars per split) */
+.shift-chart { display: flex; gap: 32px; align-items: flex-end; height: 200px; padding: 0 8px 28px; position: relative; }
+.shift-chart::before {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 28px; height: 1px; background: #262A33;
+}
+.shift-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; height: 100%; justify-content: flex-end; position: relative; }
+.shift-bars { display: flex; gap: 6px; align-items: flex-end; height: 100%; }
+.shift-bar { width: 28px; border-radius: 2px 2px 0 0; position: relative; display: flex; align-items: flex-start; justify-content: center; }
+.shift-bar .bar-val {
+  position: absolute; top: -20px;
+  font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #A8ADBB;
+  white-space: nowrap;
+}
+.shift-col .col-label {
+  position: absolute; bottom: -26px;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  text-transform: uppercase; letter-spacing: 0.05em; color: #6B7080;
+}
+
+/* histogram */
+.hist-toggle { display: flex; gap: 6px; }
+.hist-chart { height: 220px; display: flex; align-items: flex-end; gap: 3px; padding-bottom: 24px; position: relative; }
+.hist-chart::before {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 24px; height: 1px; background: #262A33;
+}
+.hist-col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; gap: 1px; height: 100%; position: relative; min-width: 6px; }
+.hist-seg { width: 100%; border-radius: 1px 1px 0 0; min-height: 0; }
+.hist-boundary {
+  position: absolute; top: 0; bottom: 24px; width: 0; border-left: 1px dashed #454B59;
+}
+.hist-boundary .boundary-label {
+  position: absolute; top: -16px; left: 4px;
+  font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: #6B7080; white-space: nowrap;
+}
+.hist-axis-label {
+  position: absolute; bottom: 2px; left: 0;
+  font-family: 'JetBrains Mono', monospace; font-size: 9px; color: #4A4E5A;
+}
+
+/* density chart */
+.density-chart { display: flex; gap: 40px; align-items: flex-end; height: 160px; padding: 0 8px 28px; position: relative; }
+.density-chart::before {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 28px; height: 1px; background: #262A33;
+}
+.density-col { flex: 1; max-width: 140px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; position: relative; }
+.density-bar { width: 56px; border-radius: 3px 3px 0 0; position: relative; }
+.density-bar .bar-val {
+  position: absolute; top: -22px; left: 50%; transform: translateX(-50%);
+  font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; color: #EDEEF1;
+  white-space: nowrap;
+}
+.density-col .col-label {
+  position: absolute; bottom: -26px;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  text-transform: uppercase; letter-spacing: 0.05em; color: #6B7080;
+}
+
+/* metric glossary */
+.metric-glossary {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 14px 20px;
+}
+.metric-def { display: contents; }
+.metric-term {
+  font-size: 13px; font-weight: 600; color: var(--thermal);
+  padding-top: 2px;
+}
+.metric-desc {
+  font-family: 'Source Serif 4', serif; font-size: 14px; line-height: 1.65;
+  color: #A8ADBB;
+}
+.metric-desc em { color: #C8CCD6; font-style: italic; }
+
+/* findings list */
+.finding-list { display: flex; flex-direction: column; gap: 24px; }
+.finding {
+  display: flex; gap: 18px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #1F222A;
+}
+.finding:last-child { border-bottom: none; padding-bottom: 0; }
+.finding-num {
+  flex-shrink: 0;
+  font-size: 13px; color: var(--thermal);
+  padding-top: 3px;
+}
+.finding-body h4 {
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.01em;
+  font-size: 17px; color: #F4F1EA; margin-bottom: 8px;
+}
+.finding-body p {
+  font-family: 'Source Serif 4', serif; font-size: 14.5px; line-height: 1.7;
+  color: #A8ADBB; max-width: 68ch;
+}
+
+/* day/night sampling grid */
+.daynight-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.daynight-card {
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid #1F222A;
+  background: #050607;
+}
+.daynight-card img { width: 100%; display: block; aspect-ratio: 16/9; object-fit: cover; }
+.daynight-card-meta {
+  padding: 7px 9px;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.daynight-tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  letter-spacing: 0.05em; text-transform: uppercase;
+  width: fit-content;
+}
+.daynight-tag i { width: 6px; height: 6px; border-radius: 50%; }
+.daynight-tag.day { color: var(--s-med); }
+.daynight-tag.day i { background: var(--s-med); }
+.daynight-tag.night { color: var(--s-large); }
+.daynight-tag.night i { background: var(--s-large); }
+.daynight-meta-row {
+  font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: #6B7080;
+  display: flex; justify-content: space-between;
+}
+.daynight-note {
+  font-family: 'Source Serif 4', serif; font-size: 13.5px; line-height: 1.65;
+  color: #A8ADBB; max-width: 78ch; padding-top: 4px; border-top: 1px solid #1F222A;
+}
+
+@media (max-width: 860px) {
+  .kpi-row { grid-template-columns: repeat(2, 1fr); }
+  .metric-glossary { grid-template-columns: 1fr; }
+  .metric-term { padding-top: 0; }
+}
+@media (max-width: 640px) {
+  .stackbar-row { flex-wrap: wrap; }
+  .stackbar-row .row-label { width: 100%; }
+  .shift-chart, .density-chart { gap: 16px; }
+}
+</style>
+
+<div class="topbar">
+  <span>VTUAV&#8209;DET</span>
+  <span>PHASE 01 &middot; DATASET EXPLORATION</span>
+</div>
+
+<div class="tabbar">
+  <div class="tabbar-inner" role="tablist" aria-label="Page sections">
+    <button class="tab-btn" id="tabBtnOverview" role="tab" aria-selected="true" aria-controls="panelOverview">Overview</button>
+    <button class="tab-btn" id="tabBtnStats" role="tab" aria-selected="false" aria-controls="panelStats">Statistics</button>
+    <button class="tab-btn" id="tabBtnModels" role="tab" aria-selected="false" aria-controls="panelModels">Model Results</button>
+  </div>
+</div>
+
+<div class="tab-panel active" id="panelOverview" role="tabpanel" aria-labelledby="tabBtnOverview">
+
+<!-- ================= HERO ================= -->
+<section class="hero" id="hero">
+  <div class="hero-media" id="heroMedia">
+    <img class="rgb-layer" id="heroRgb" alt="RGB aerial view of a crowded plaza" />
+    <img class="ir-layer" id="heroIr" alt="Thermal aerial view of the same crowded plaza" />
+    <svg class="hero-boxes" id="heroBoxes" preserveAspectRatio="none"></svg>
+  </div>
+  <div class="hero-scrim"></div>
+
+  <div class="hero-toggle" id="heroToggle">
+    <span class="dot" id="heroDot"></span>
+    <button type="button" data-mode="rgb" aria-pressed="true">RGB</button>
+    <span class="sep">/</span>
+    <button type="button" data-mode="ir" aria-pressed="false">Thermal</button>
+  </div>
+
+  <div class="hero-content">
+    <div class="hero-eyebrow">VTUAV&#8209;det subset &middot; 1,700 aerial RGB&#8209;thermal pairs</div>
+    <h1 class="hero-title">One sensor<br>sees a <em>crowd</em>.<br>The other sees<br><em>every person</em> in it.</h1>
+    <p class="hero-sub">99 pedestrians, one frame &mdash; the densest scene in the training set. Toggle the modality above. Every box below is a real ground&#8209;truth annotation from <span class="mono">06925.jpg</span>, not a mock&#8209;up.</p>
+    <p class="hero-caption mono">TRAIN/06925.JPG &middot; 99 ANNOTATIONS &middot; RES 1920&times;1080 &middot; AVG BOX AREA 7,299&nbsp;PX&sup2;</p>
+  </div>
+
+  <div class="hero-scroll-cue">
+    <div class="chevrons">
+      <svg width="14" height="8" viewBox="0 0 14 8" fill="none"><path d="M1 1L7 7L13 1" stroke="currentColor" stroke-width="1.4"/></svg>
+      <svg width="14" height="8" viewBox="0 0 14 8" fill="none"><path d="M1 1L7 7L13 1" stroke="currentColor" stroke-width="1.4"/></svg>
+    </div>
+    Scroll for the case
+  </div>
+</section>
+
+<!-- ================= STAT STRIP ================= -->
+<section class="stat-strip">
+  <div class="stat-strip-inner">
+    <div class="stat-strip-head">
+      <h2>The case for fusion, in four numbers</h2>
+      <p>Every figure below is computed directly from the provided COCO annotations &mdash; not estimated.</p>
+    </div>
+    <div class="stat-grid">
+
+      <div class="stat-card accent">
+        <div class="stat-label">Small&#8209;object escalation</div>
+        <div class="stat-value">2.57<span class="unit">&times;</span></div>
+        <div class="spark" aria-hidden="true">
+          <i style="height:28%"></i><i style="height:52%"></i><i class="on" style="height:100%"></i>
+        </div>
+        <div class="stat-detail">Small pedestrians (area &lt; 32&sup2;px) go from 9.9% of train to 25.6% of test &mdash; the model is judged on exactly the case it sees least.</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">Crowd density, train &rarr; test</div>
+        <div class="stat-value">10.3<span class="unit">ped/img</span></div>
+        <div class="spark" aria-hidden="true">
+          <i style="height:60%"></i><i style="height:68%"></i><i class="on" style="height:92%"></i>
+        </div>
+        <div class="stat-detail">Mean pedestrians per image rises from 6.78 (train) to 10.34 (test), a 52.5% increase in occlusion pressure.</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">Pixel budget, threshold&#8209;small object</div>
+        <div class="stat-value">1<span class="unit">px&sup2; @ P5</span></div>
+        <div class="stat-detail">A 32&times;32px pedestrian &mdash; the small/medium boundary &mdash; collapses to a single feature cell at stride&#8209;32. Below threshold, it vanishes before the head ever sees it.</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">Alignment pairs verified</div>
+        <div class="stat-value">20<span class="unit">/20 pass</span></div>
+        <div class="stat-detail">Every ground&#8209;truth box lands on the same physical target in both sensors &mdash; confirmed by direct visual audit, not assumed from spec sheets.</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ================= PROOF: NIGHT ================= -->
+<section class="proof-section">
+  <div class="proof-inner">
+    <div class="proof-heading">
+      <span class="num mono">01</span>
+      <h2>When RGB goes dark, thermal keeps working</h2>
+    </div>
+    <div class="proof-pair">
+      <div class="proof-panel rgb">
+        <figure>
+          <img id="proofNightRgb" alt="Nighttime RGB frame, almost entirely black" />
+        </figure>
+        <figcaption>
+          <span class="modality-tag"><span class="dot"></span>RGB &middot; 01105.jpg</span>
+          <span class="mono">&mu; = 10.7 / 255</span>
+        </figcaption>
+      </div>
+      <div class="proof-panel ir">
+        <figure>
+          <img id="proofNightIr" alt="Thermal frame of the same scene, pedestrian clearly visible as a warm silhouette" />
+        </figure>
+        <figcaption>
+          <span class="modality-tag"><span class="dot"></span>Thermal &middot; 01105.jpg</span>
+          <span class="mono">&Delta;&mu; &asymp; 165</span>
+        </figcaption>
+      </div>
+    </div>
+    <p class="proof-note">Mean RGB pixel intensity drops to <b>10.7 out of 255</b> &mdash; below the noise floor for any convolutional feature extractor. The same pedestrian remains a distinct, high&#8209;contrast heat signature in the paired thermal frame, captured at the identical instant by a co&#8209;registered sensor.</p>
+  </div>
+</section>
+
+<!-- ================= PROOF: BLOOMING ================= -->
+<section class="proof-section" style="padding-top: 0;">
+  <div class="proof-inner">
+    <div class="proof-heading">
+      <span class="num mono">02</span>
+      <h2>When heat signatures merge, RGB keeps them apart</h2>
+    </div>
+    <div class="proof-pair">
+      <div class="proof-panel ir">
+        <figure>
+          <img id="proofBloomIr" alt="Thermal frame showing two pedestrians merged into one blob" />
+        </figure>
+        <figcaption>
+          <span class="modality-tag"><span class="dot"></span>Thermal &middot; 03250.jpg</span>
+          <span class="mono">1 blob detected</span>
+        </figcaption>
+      </div>
+      <div class="proof-panel rgb">
+        <figure>
+          <img id="proofBloomRgb" alt="RGB frame of the same scene showing two pedestrians as distinct individuals" />
+        </figure>
+        <figcaption>
+          <span class="modality-tag"><span class="dot"></span>RGB &middot; 03250.jpg</span>
+          <span class="mono">2 ground truth</span>
+        </figcaption>
+      </div>
+    </div>
+    <p class="proof-note">The converse failure: two pedestrians standing close together <b>thermally bloom into a single warm region</b>, an instance&#8209;merging error no thermal&#8209;only detector can recover from. Sharp clothing&#8209;color and edge contrast in the RGB frame separate them cleanly. Neither modality alone is sufficient &mdash; they fail in different places.</p>
+  </div>
+</section>
+
+<!-- ================= SEAM TRANSITION ================= -->
+<section class="seam" id="seam">
+  <div class="seam-grid" aria-hidden="true"></div>
+  <div class="seam-text">
+    <div class="display">Twenty&#8209;five pairs.<br>Every box is <em>real</em>.</div>
+    <p>Scroll to inspect the raw dataset yourself &darr;</p>
+  </div>
+</section>
+
+<!-- ================= EXPLORER ================= -->
+<section class="explorer" id="explorer">
+  <div class="explorer-head">
+    <h2>Pair explorer</h2>
+    <div class="explorer-desc">Hover any frame for its thermal counterpart. Click to inspect ground&#8209;truth boxes at full resolution.</div>
+  </div>
+
+  <div class="explorer-controls">
+    <div class="control-group">
+      <span class="control-label">Split</span>
+      <button class="chip" data-filter="split" data-value="all" aria-pressed="true">All</button>
+      <button class="chip" data-filter="split" data-value="train" aria-pressed="false">Train</button>
+      <button class="chip" data-filter="split" data-value="val" aria-pressed="false">Val</button>
+      <button class="chip" data-filter="split" data-value="test" aria-pressed="false">Test</button>
+    </div>
+    <div class="control-group">
+      <span class="control-label">Density</span>
+      <button class="chip" data-filter="density" data-value="all" aria-pressed="true">All</button>
+      <button class="chip" data-filter="density" data-value="sparse" aria-pressed="false">1&ndash;3 ped</button>
+      <button class="chip" data-filter="density" data-value="moderate" aria-pressed="false">4&ndash;15 ped</button>
+      <button class="chip" data-filter="density" data-value="crowd" aria-pressed="false">16+ ped</button>
+    </div>
+    <div class="control-group">
+      <span class="control-label">Sort</span>
+      <button class="chip" data-filter="sort" data-value="split" aria-pressed="true">Split order</button>
+      <button class="chip" data-filter="sort" data-value="density" aria-pressed="false">Density &darr;</button>
+    </div>
+  </div>
+
+  <div class="explorer-grid" id="explorerGrid"></div>
+
+  <div class="page-footer">
+    <span>VTUAV&#8209;det subset &middot; 1,200 / 300 / 200 train&#8209;val&#8209;test pairs &middot; single class: person</span>
+    <span>Phase 1 &mdash; Dataset Exploration &amp; Preparation</span>
+  </div>
+</section>
+
+</div><!-- /panelOverview -->
+
+<!-- ================= STATISTICS PANEL ================= -->
+<div class="tab-panel" id="panelStats" role="tabpanel" aria-labelledby="tabBtnStats">
+<section class="stats-page">
+  <div class="stats-inner">
+
+    <header class="stats-header">
+      <h2>What the annotations say</h2>
+      <p>Every number and chart on this page is computed directly from the 12,543 ground&#8209;truth boxes in <span class="mono">train.json</span> / <span class="mono">val.json</span> / <span class="mono">test.json</span> &mdash; nothing here is estimated or illustrative.</p>
+    </header>
+
+    <!-- KPI row -->
+    <div class="kpi-row">
+      <div class="kpi-tile">
+        <div class="kpi-label">Total annotations</div>
+        <div class="kpi-value mono">12,543</div>
+        <div class="kpi-sub">1,700 image pairs &middot; 3,400 files</div>
+      </div>
+      <div class="kpi-tile">
+        <div class="kpi-label">Small&#8209;object share (pooled)</div>
+        <div class="kpi-value mono">13.9<span class="kpi-unit">%</span></div>
+        <div class="kpi-sub">area &lt; 32&sup2;px &middot; 1,761 boxes</div>
+      </div>
+      <div class="kpi-tile">
+        <div class="kpi-label">Train &rarr; test escalation</div>
+        <div class="kpi-value mono accent">2.57<span class="kpi-unit">&times;</span></div>
+        <div class="kpi-sub">small&#8209;object ratio, test vs. train</div>
+      </div>
+      <div class="kpi-tile">
+        <div class="kpi-label">Degenerate boxes found</div>
+        <div class="kpi-value mono">2<span class="kpi-unit">/ 12,543</span></div>
+        <div class="kpi-sub">0.016% &middot; zero&#8209;width, filtered at load</div>
+      </div>
+    </div>
+
+    <!-- Chart 1: per-split S/M/L stacked bar -->
+    <div class="chart-card">
+      <div class="chart-card-head">
+        <div>
+          <h3>Size&#8209;class composition by split</h3>
+          <p>Every annotation bucketed into small / medium / large using the official area thresholds. Bars sum to each split's annotation count.</p>
+        </div>
+        <div class="chart-legend">
+          <span class="legend-item"><i style="background:var(--s-small)"></i>Small &lt;32&sup2;px</span>
+          <span class="legend-item"><i style="background:var(--s-med)"></i>Medium 32&sup2;&ndash;96&sup2;px</span>
+          <span class="legend-item"><i style="background:var(--s-large)"></i>Large &ge;96&sup2;px</span>
+        </div>
+      </div>
+      <div class="stackbar-chart" id="stackChart"></div>
+      <div class="chart-table-wrap">
+        <table class="chart-table">
+          <thead><tr><th>Split</th><th>Images</th><th>Total</th><th>Small</th><th>Medium</th><th>Large</th><th>Ped / image</th></tr></thead>
+          <tbody id="splitTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Chart 2: size ratio shift (line-like bars) -->
+    <div class="chart-card">
+      <div class="chart-card-head">
+        <div>
+          <h3>Distribution shift: train &rarr; val &rarr; test</h3>
+          <p>Small&#8209;object share rises at every split boundary while large&#8209;object share falls &mdash; the harder cases concentrate exactly where the model is scored.</p>
+        </div>
+      </div>
+      <div class="shift-chart" id="shiftChart"></div>
+    </div>
+
+    <!-- Chart 3: bbox size histogram -->
+    <div class="chart-card">
+      <div class="chart-card-head">
+        <div>
+          <h3>Bounding&#8209;box side&#8209;length distribution</h3>
+          <p>Side length = &radic;area, in pixels. The dashed lines mark the official 32px and 96px size&#8209;class boundaries. Toggle a split to isolate it.</p>
+        </div>
+        <div class="hist-toggle" id="histToggle">
+          <button class="chip" data-hist="train" aria-pressed="true">Train</button>
+          <button class="chip" data-hist="val" aria-pressed="true">Val</button>
+          <button class="chip" data-hist="test" aria-pressed="true">Test</button>
+        </div>
+      </div>
+      <div class="hist-chart" id="histChart"></div>
+    </div>
+
+    <!-- Chart 4: crowd density -->
+    <div class="chart-card">
+      <div class="chart-card-head">
+        <div>
+          <h3>Annotation density per image</h3>
+          <p>Mean pedestrians per image climbs 52.5% from train to test &mdash; the test set is systematically more crowded, not just smaller in object size.</p>
+        </div>
+      </div>
+      <div class="density-chart" id="densityChart"></div>
+    </div>
+
+    <!-- Chart 5: day/night sampling -->
+    <div class="chart-card">
+      <div class="chart-card-head">
+        <div>
+          <h3>Day / night sampling</h3>
+          <p>Filenames carry no lighting metadata, so this is a visually&#8209;classified sample &mdash; every 100th train image (12 samples), each viewed directly rather than inferred from brightness alone. Reported as an approximate estimate, not exhaustive.</p>
+        </div>
+        <div class="chart-legend" id="daynightLegend"></div>
+      </div>
+      <div class="daynight-grid" id="daynightGrid"></div>
+      <p class="daynight-note">Mean intensity alone is <b style="color:#EDEEF1">not a reliable classifier</b> here: <span class="mono">01071.jpg</span> (overcast daylight, mean 71.3) and <span class="mono">05633.jpg</span> (LED&#8209;lit night plaza, mean 75.0) land almost on top of each other despite being opposite conditions &mdash; bright decorative lighting at night inflates mean brightness into the same range as dim daylight. Every classification above came from viewing the frame, not the intensity value.</p>
+    </div>
+
+    <div class="page-footer" style="max-width: 1320px;">
+      <span>Source: <span class="mono">reports/phase1_technical_report.md</span> &middot; figures independently re&#8209;derived from the raw COCO JSON</span>
+      <span>Phase 1 &mdash; Dataset Exploration &amp; Preparation</span>
+    </div>
+  </div>
+</section>
+</div><!-- /panelStats -->
+
+<!-- ================= MODEL RESULTS PANEL ================= -->
+<div class="tab-panel" id="panelModels" role="tabpanel" aria-labelledby="tabBtnModels">
+<section class="stats-page">
+  <div class="stats-inner">
+
+    <header class="stats-header">
+      <h2>How the detectors were scored</h2>
+      <p>Phase 2 benchmarks three detectors &mdash; RGB&#8209;only, Thermal&#8209;only, and the fused Baseline QFDet &mdash; all evaluated from the <b style="color:#EDEEF1">same provided pretrained QFDet checkpoint</b>. Unimodal numbers come from feeding that real checkpoint a zeroed tensor for the missing modality, not a separately trained substitute model. Full methodology and write&#8209;up: <span class="mono">reports/phase2_unimodal_baseline.md</span>.</p>
+    </header>
+
+    <!-- Metric glossary -->
+    <div class="chart-card">
+      <div class="chart-card-head">
+        <div>
+          <h3>Detection metrics, explained</h3>
+          <p>Standard COCO object&#8209;detection metrics. All are computed at IoU thresholds against the ground&#8209;truth boxes verified in Phase 1.</p>
+        </div>
+      </div>
+      <div class="metric-glossary">
+        <div class="metric-def">
+          <span class="metric-term mono">mAP</span>
+          <span class="metric-desc">Mean Average Precision averaged over IoU thresholds 0.50&ndash;0.95 (step 0.05). The single headline detection number &mdash; higher is better, rewards both correct localization and correct confidence ranking.</span>
+        </div>
+        <div class="metric-def">
+          <span class="metric-term mono">mAP50 / mAP75</span>
+          <span class="metric-desc">AP at a single fixed IoU threshold (50% or 75% overlap with ground truth). mAP50 is a looser, easier&#8209;to&#8209;hit bar; mAP75 demands tighter box localization.</span>
+        </div>
+        <div class="metric-def">
+          <span class="metric-term mono">mAP<sub>S</sub> / mAP<sub>M</sub> / mAP<sub>L</sub></span>
+          <span class="metric-desc">mAP computed separately on Small (&lt;32&sup2;px), Medium, and Large ground&#8209;truth boxes &mdash; the same size buckets from the Statistics tab. mAP<sub>S</sub> is the number this whole project is ultimately trying to move.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-card-head">
+        <div>
+          <h3>Computational metrics, explained</h3>
+          <p>Cost and speed &mdash; a detector that scores well but can't run in real time isn't a viable deployment.</p>
+        </div>
+      </div>
+      <div class="metric-glossary">
+        <div class="metric-def">
+          <span class="metric-term mono">FPS / Inference time</span>
+          <span class="metric-desc">Frames processed per second and milliseconds per frame, measured on the same GPU as everything else in this project (RTX 4060). Inverse of each other; both reported since either can be the more intuitive read depending on context.</span>
+        </div>
+        <div class="metric-def">
+          <span class="metric-term mono">Model size</span>
+          <span class="metric-desc">Checkpoint file size on disk (MB) &mdash; what you'd actually ship or load.</span>
+        </div>
+        <div class="metric-def">
+          <span class="metric-term mono">Params</span>
+          <span class="metric-desc">Total learnable parameters (millions) &mdash; a proxy for model capacity and memory footprint independent of input resolution.</span>
+        </div>
+        <div class="metric-def">
+          <span class="metric-term mono">FLOPs</span>
+          <span class="metric-desc">Floating&#8209;point operations per forward pass (billions), at the model's 640&times;512 eval resolution &mdash; a resolution&#8209;aware proxy for compute cost, independent of the specific GPU used.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Full comparison table -->
+    <div class="chart-card">
+      <div class="chart-card-head">
+        <div>
+          <h3>All three detectors, every metric</h3>
+          <p>Test split, the numbers that count for submission. Model size / params / FLOPs are identical across all three rows because ablating an input stream doesn't change the compute graph, only what flows through it &mdash; same checkpoint, same architecture, every row.</p>
+        </div>
+      </div>
+      <div class="chart-table-wrap">
+        <table class="chart-table" id="modelResultsTable">
+          <thead>
+            <tr>
+              <th style="text-align:left">Detector</th>
+              <th>mAP</th><th>mAP50</th><th>mAP75</th>
+              <th>mAP<sub>S</sub></th><th>mAP<sub>M</sub></th><th>mAP<sub>L</sub></th>
+              <th>FPS</th><th>Infer. ms</th>
+              <th>Size (MB)</th><th>Params (M)</th><th>FLOPs (G)</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Findings -->
+    <div class="chart-card">
+      <div class="chart-card-head">
+        <div>
+          <h3>What the numbers say</h3>
+          <p>Four findings from comparing the three detectors, all traceable to the table above.</p>
+        </div>
+      </div>
+      <div class="finding-list">
+        <div class="finding">
+          <span class="finding-num mono">01</span>
+          <div class="finding-body">
+            <h4>Fusion beats either modality alone, by a wide margin</h4>
+            <p>Baseline QFDet (mAP 0.299) beats Thermal&#8209;only (0.232) by <b style="color:#EDEEF1">29% relative</b>, and RGB&#8209;only (0.042) by <b style="color:#EDEEF1">7&times;</b>. This is the clearest evidence in the whole project for why a fusion strategy is worth building &mdash; neither sensor alone gets close to the fused result.</p>
+          </div>
+        </div>
+        <div class="finding">
+          <span class="finding-num mono">02</span>
+          <div class="finding-body">
+            <h4>RGB&#8209;only collapses far more than Thermal&#8209;only degrades</h4>
+            <p>This isn't simply "thermal is the better sensor." QFDet's quality&#8209;attention fusion gate learns a per&#8209;pixel weighting for each stream assuming <em>both</em> are present. Zeroing one stream doesn't just remove its signal &mdash; it breaks the calibration the other stream's weighting depends on. The gate leans more heavily on thermal to begin with (this dataset skews toward low&#8209;contrast, low&#8209;light aerial scenes), so losing it hurts less than losing RGB.</p>
+          </div>
+        </div>
+        <div class="finding">
+          <span class="finding-num mono">03</span>
+          <div class="finding-body">
+            <h4>Small&#8209;object detection is the weakest metric everywhere</h4>
+            <p>mAP<sub>S</sub> (0.144 fused, val) is barely half of mAP<sub>M</sub> and a quarter of mAP<sub>L</sub> &mdash; in every one of the three detectors, not just the weak ones. Matches Phase 1's dataset finding almost exactly: fusion alone doesn't solve the small&#8209;pedestrian problem, motivating Phase 3's shallow&#8209;level fusion work specifically.</p>
+          </div>
+        </div>
+        <div class="finding">
+          <span class="finding-num mono">04</span>
+          <div class="finding-body">
+            <h4>Val consistently outperforms test, across all three detectors</h4>
+            <p>Baseline QFDet: 0.338 (val) vs. 0.299 (test). Consistent with Phase 1's finding that the test split has a 2.57&times; higher share of small pedestrians than train &mdash; and small objects are the hardest case for every configuration above. A real distribution&#8209;shift effect, not evaluation noise.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-footer" style="max-width: 1320px;">
+      <span>Source: <span class="mono">reports/phase2_unimodal_baseline.md</span> &middot; <span class="mono">results/metrics.csv</span></span>
+      <span>Phase 2 &mdash; Unimodal Analysis &amp; Baseline Benchmarking</span>
+    </div>
+  </div>
+</section>
+</div><!-- /panelModels -->
+
+<!-- ================= DETAIL OVERLAY ================= -->
+<div class="detail-overlay" id="detailOverlay" role="dialog" aria-modal="true" aria-label="Image pair detail">
+  <div class="detail-panel">
+    <div class="detail-header">
+      <div class="file"><span class="split-tag" id="detailSplitTag"></span><span id="detailFile" class="mono"></span></div>
+      <button class="detail-close" id="detailClose" aria-label="Close detail view">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 1L13 13M13 1L1 13" stroke="currentColor" stroke-width="1.5"/></svg>
+      </button>
+    </div>
+    <div class="detail-media">
+      <div class="panel">
+        <span class="tag">RGB</span>
+        <img id="detailRgb" alt="" />
+        <svg class="detail-boxes" id="detailBoxesRgb" preserveAspectRatio="none"></svg>
+      </div>
+      <div class="panel">
+        <span class="tag">Thermal</span>
+        <img id="detailIr" alt="" />
+        <svg class="detail-boxes" id="detailBoxesIr" preserveAspectRatio="none"></svg>
+      </div>
+    </div>
+    <div class="detail-footer">
+      <span id="detailPedCount"></span>
+      <span class="legend"><i style="background:var(--s-small)"></i>Small &lt;32&sup2;px</span>
+      <span class="legend"><i style="background:var(--s-med)"></i>Medium</span>
+      <span class="legend"><i style="background:var(--s-large)"></i>Large &ge;96&sup2;px</span>
+    </div>
+  </div>
+</div>
+
+<script>
+__DATA_JS__
+
+(function() {
+  'use strict';
+  var grid = window.EXPLORER_DATA || [];
+  var hero = window.HERO_DATA;
+
+  /* ---------- HERO ---------- */
+  if (hero) {
+    document.getElementById('heroRgb').src = hero.rgb;
+    document.getElementById('heroIr').src = hero.ir;
+    var svg = document.getElementById('heroBoxes');
+    svg.setAttribute('viewBox', '0 0 ' + hero.w + ' ' + hero.h);
+    hero.boxes.forEach(function(b) {
+      var r = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      r.setAttribute('class', 'hero-box-rect');
+      r.setAttribute('x', b.x); r.setAttribute('y', b.y);
+      r.setAttribute('width', b.w); r.setAttribute('height', b.h);
+      r.setAttribute('fill', 'none');
+      r.setAttribute('stroke', '#E85D1F');
+      r.setAttribute('stroke-width', '1.5');
+      r.setAttribute('opacity', '0.85');
+      svg.appendChild(r);
+    });
+  }
+
+  var heroMedia = document.getElementById('heroMedia');
+  var heroDot = document.getElementById('heroDot');
+  document.getElementById('heroToggle').addEventListener('click', function(e) {
+    var btn = e.target.closest('button[data-mode]');
+    if (!btn) return;
+    var mode = btn.dataset.mode;
+    heroMedia.classList.toggle('show-ir', mode === 'ir');
+    this.querySelectorAll('button').forEach(function(b) {
+      b.setAttribute('aria-pressed', b === btn ? 'true' : 'false');
+    });
+    heroDot.style.background = mode === 'ir' ? '#E85D1F' : '#3D5A80';
+    heroDot.style.boxShadow = '0 0 8px ' + (mode === 'ir' ? '#E85D1F' : '#3D5A80');
+  });
+
+  var autoToggleTimer = setInterval(function() {
+    var irBtn = document.querySelector('.hero-toggle button[data-mode="ir"]');
+    var rgbBtn = document.querySelector('.hero-toggle button[data-mode="rgb"]');
+    var showingIr = heroMedia.classList.contains('show-ir');
+    (showingIr ? rgbBtn : irBtn).click();
+  }, 3600);
+  document.getElementById('heroToggle').addEventListener('pointerdown', function() {
+    clearInterval(autoToggleTimer);
+  });
+
+  /* ---------- PROOF IMAGES (reuse grid samples that match filenames) ---------- */
+  function findSample(file) {
+    for (var i = 0; i < grid.length; i++) if (grid[i].file === file) return grid[i];
+    return null;
+  }
+  var night = findSample('01105.jpg');
+  if (night) {
+    document.getElementById('proofNightRgb').src = night.rgb;
+    document.getElementById('proofNightIr').src = night.ir;
+  }
+  var bloom = findSample('03250.jpg');
+  if (bloom) {
+    document.getElementById('proofBloomIr').src = bloom.ir;
+    document.getElementById('proofBloomRgb').src = bloom.rgb;
+  }
+
+  /* ---------- EXPLORER GRID ---------- */
+  var gridEl = document.getElementById('explorerGrid');
+  var state = { split: 'all', density: 'all', sort: 'split' };
+
+  function densityBucket(n) {
+    if (n <= 3) return 'sparse';
+    if (n <= 15) return 'moderate';
+    return 'crowd';
+  }
+
+  var rootStyle = getComputedStyle(document.documentElement);
+  function bucketColor(bucket) {
+    var varName = bucket === 'S' ? '--s-small' : bucket === 'M' ? '--s-med' : '--s-large';
+    return rootStyle.getPropertyValue(varName).trim();
+  }
+
+  function renderGrid() {
+    var items = grid.filter(function(s) {
+      if (state.split !== 'all' && s.split !== state.split) return false;
+      if (state.density !== 'all' && densityBucket(s.n_ped) !== state.density) return false;
+      return true;
+    });
+    if (state.sort === 'density') {
+      items = items.slice().sort(function(a, b) { return b.n_ped - a.n_ped; });
+    }
+
+    gridEl.innerHTML = '';
+    if (items.length === 0) {
+      var empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.textContent = 'No pairs match this filter combination.';
+      gridEl.appendChild(empty);
+      return;
+    }
+
+    items.forEach(function(s) {
+      var card = document.createElement('div');
+      card.className = 'card';
+      card.tabIndex = 0;
+      card.setAttribute('role', 'button');
+      card.setAttribute('aria-label', 'Open ' + s.file + ', ' + s.n_ped + ' pedestrians');
+
+      var media = document.createElement('div');
+      media.className = 'card-media';
+      var rgbImg = document.createElement('img');
+      rgbImg.src = s.rgb; rgbImg.alt = 'RGB frame ' + s.file; rgbImg.loading = 'lazy';
+      var irImg = document.createElement('img');
+      irImg.className = 'card-ir';
+      irImg.src = s.ir; irImg.alt = 'Thermal frame ' + s.file; irImg.loading = 'lazy';
+      media.appendChild(rgbImg); media.appendChild(irImg);
+
+      var meta = document.createElement('div');
+      meta.className = 'card-meta';
+      var splitTag = document.createElement('span');
+      splitTag.className = 'split-tag'; splitTag.textContent = s.split;
+      var pedCount = document.createElement('span');
+      pedCount.className = 'ped-count mono'; pedCount.textContent = s.n_ped + ' ped';
+      meta.appendChild(splitTag); meta.appendChild(pedCount);
+
+      var dots = document.createElement('div');
+      dots.className = 'card-sizedots';
+      var counts = { S: 0, M: 0, L: 0 };
+      s.boxes.forEach(function(b) { counts[b.bucket]++; });
+      var shown = 0;
+      ['S', 'M', 'L'].forEach(function(k) {
+        for (var i = 0; i < counts[k] && shown < 24; i++, shown++) {
+          var dot = document.createElement('i');
+          dot.style.background = bucketColor(k);
+          dots.appendChild(dot);
+        }
+      });
+
+      card.appendChild(media);
+      card.appendChild(meta);
+      card.appendChild(dots);
+      card.addEventListener('click', function() { openDetail(s); });
+      card.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDetail(s); }
+      });
+      gridEl.appendChild(card);
+    });
+  }
+
+  document.querySelectorAll('.explorer-controls .chip').forEach(function(chip) {
+    chip.addEventListener('click', function() {
+      var group = chip.dataset.filter;
+      state[group] = chip.dataset.value;
+      document.querySelectorAll('.chip[data-filter="' + group + '"]').forEach(function(c) {
+        c.setAttribute('aria-pressed', c === chip ? 'true' : 'false');
+      });
+      renderGrid();
+    });
+  });
+
+  /* ---------- DETAIL OVERLAY ---------- */
+  var overlay = document.getElementById('detailOverlay');
+  function openDetail(s) {
+    document.getElementById('detailSplitTag').textContent = s.split;
+    document.getElementById('detailFile').textContent = s.file;
+    document.getElementById('detailRgb').src = s.rgb;
+    document.getElementById('detailIr').src = s.ir;
+    document.getElementById('detailPedCount').textContent = s.n_ped + ' ground-truth pedestrians';
+
+    [['detailBoxesRgb'], ['detailBoxesIr']].forEach(function(pair) {
+      var svg = document.getElementById(pair[0]);
+      svg.setAttribute('viewBox', '0 0 ' + s.w + ' ' + s.h);
+      svg.innerHTML = '';
+      s.boxes.forEach(function(b) {
+        var r = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        r.setAttribute('x', b.x); r.setAttribute('y', b.y);
+        r.setAttribute('width', b.w); r.setAttribute('height', b.h);
+        r.setAttribute('fill', 'none');
+        r.setAttribute('stroke', bucketColor(b.bucket));
+        r.setAttribute('stroke-width', '1.5');
+        svg.appendChild(r);
+      });
+    });
+
+    overlay.classList.add('open');
+    document.getElementById('detailClose').focus();
+  }
+  document.getElementById('detailClose').addEventListener('click', function() {
+    overlay.classList.remove('open');
+  });
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && overlay.classList.contains('open')) overlay.classList.remove('open');
+  });
+
+  renderGrid();
+
+  /* ---------- TABS ---------- */
+  var TABS = {
+    overview: { btn: document.getElementById('tabBtnOverview'), panel: document.getElementById('panelOverview') },
+    stats:    { btn: document.getElementById('tabBtnStats'),    panel: document.getElementById('panelStats'),    onFirstShow: renderStats },
+    models:   { btn: document.getElementById('tabBtnModels'),   panel: document.getElementById('panelModels'),   onFirstShow: renderModelResults },
+  };
+  var renderedOnce = {};
+
+  function activateTab(name) {
+    Object.keys(TABS).forEach(function(key) {
+      var active = key === name;
+      TABS[key].btn.setAttribute('aria-selected', active ? 'true' : 'false');
+      TABS[key].panel.classList.toggle('active', active);
+    });
+    var tab = TABS[name];
+    if (tab.onFirstShow && !renderedOnce[name]) {
+      renderedOnce[name] = true;
+      tab.onFirstShow();
+    }
+    window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+  }
+  Object.keys(TABS).forEach(function(key) {
+    TABS[key].btn.addEventListener('click', function() { activateTab(key); });
+  });
+
+  /* ---------- STATISTICS TAB ---------- */
+  function fmtNum(n) { return n.toLocaleString('en-US'); }
+
+  function renderStats() {
+    var stats = window.STATS_DATA;
+    if (!stats) return;
+    var splitOrder = ['train', 'val', 'test'];
+    var splitLabels = { train: 'Train', val: 'Val', test: 'Test' };
+    var sColor = rootStyle.getPropertyValue('--s-small').trim();
+    var mColor = rootStyle.getPropertyValue('--s-med').trim();
+    var lColor = rootStyle.getPropertyValue('--s-large').trim();
+
+    /* Chart 1: stacked bar per split */
+    var stackEl = document.getElementById('stackChart');
+    stackEl.innerHTML = '';
+    splitOrder.forEach(function(sp) {
+      var d = stats.splits[sp];
+      var row = document.createElement('div');
+      row.className = 'stackbar-row';
+
+      var label = document.createElement('div');
+      label.className = 'row-label';
+      label.textContent = splitLabels[sp];
+      row.appendChild(label);
+
+      var track = document.createElement('div');
+      track.className = 'stackbar-track';
+      [['S', d.S, d.S_pct, sColor], ['M', d.M, d.M_pct, mColor], ['L', d.L, d.L_pct, lColor]].forEach(function(seg) {
+        var el = document.createElement('div');
+        el.className = 'stackbar-seg';
+        el.style.width = seg[2] + '%';
+        el.style.background = seg[3];
+        el.title = seg[0] + ': ' + fmtNum(seg[1]) + ' (' + seg[2].toFixed(1) + '%)';
+        if (seg[2] > 8) {
+          var lbl = document.createElement('span');
+          lbl.className = 'seg-label';
+          lbl.textContent = seg[2].toFixed(0) + '%';
+          el.appendChild(lbl);
+        }
+        track.appendChild(el);
+      });
+      row.appendChild(track);
+
+      var total = document.createElement('div');
+      total.className = 'row-total';
+      total.textContent = fmtNum(d.n_ann);
+      row.appendChild(total);
+
+      stackEl.appendChild(row);
+    });
+
+    /* Chart 1 companion table */
+    var tbody = document.getElementById('splitTableBody');
+    tbody.innerHTML = '';
+    splitOrder.forEach(function(sp) {
+      var d = stats.splits[sp];
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td>' + splitLabels[sp] + '</td>' +
+        '<td>' + fmtNum(d.n_img) + '</td>' +
+        '<td>' + fmtNum(d.n_ann) + '</td>' +
+        '<td>' + fmtNum(d.S) + '</td>' +
+        '<td>' + fmtNum(d.M) + '</td>' +
+        '<td>' + fmtNum(d.L) + '</td>' +
+        '<td>' + d.mean_ped.toFixed(2) + '</td>';
+      tbody.appendChild(tr);
+    });
+
+    /* Chart 2: distribution shift (paired S/M/L bars per split) */
+    var shiftEl = document.getElementById('shiftChart');
+    shiftEl.innerHTML = '';
+    var maxPct = 0;
+    splitOrder.forEach(function(sp) {
+      var d = stats.splits[sp];
+      maxPct = Math.max(maxPct, d.S_pct, d.M_pct, d.L_pct);
+    });
+    splitOrder.forEach(function(sp) {
+      var d = stats.splits[sp];
+      var col = document.createElement('div');
+      col.className = 'shift-col';
+
+      var bars = document.createElement('div');
+      bars.className = 'shift-bars';
+      [['S', d.S_pct, sColor], ['M', d.M_pct, mColor], ['L', d.L_pct, lColor]].forEach(function(seg) {
+        var bar = document.createElement('div');
+        bar.className = 'shift-bar';
+        var h = (seg[1] / maxPct) * 100;
+        bar.style.height = h + '%';
+        bar.style.background = seg[2];
+        bar.title = seg[0] + ' ' + splitLabels[sp] + ': ' + seg[1].toFixed(1) + '%';
+        var val = document.createElement('span');
+        val.className = 'bar-val';
+        val.textContent = seg[1].toFixed(1) + '%';
+        bar.appendChild(val);
+        bars.appendChild(bar);
+      });
+      col.appendChild(bars);
+
+      var label = document.createElement('span');
+      label.className = 'col-label';
+      label.textContent = splitLabels[sp];
+      col.appendChild(label);
+
+      shiftEl.appendChild(col);
+    });
+
+    /* Chart 3: side-length histogram, toggleable per split */
+    var histState = { train: true, val: true, test: true };
+    function renderHist() {
+      var histEl = document.getElementById('histChart');
+      histEl.innerHTML = '';
+      var nBins = stats.n_bins;
+      var binPx = stats.bin_px;
+      var maxCount = 0;
+      for (var i = 0; i < nBins; i++) {
+        var sum = 0;
+        splitOrder.forEach(function(sp) { if (histState[sp]) sum += stats.splits[sp].hist[i]; });
+        maxCount = Math.max(maxCount, sum);
+      }
+      var colors = { train: sColor, val: mColor, test: lColor };
+      for (var i = 0; i < nBins; i++) {
+        var col = document.createElement('div');
+        col.className = 'hist-col';
+        var segs = [];
+        splitOrder.forEach(function(sp) {
+          if (histState[sp]) segs.push([sp, stats.splits[sp].hist[i]]);
+        });
+        segs.forEach(function(seg) {
+          var el = document.createElement('div');
+          el.className = 'hist-seg';
+          var h = maxCount > 0 ? (seg[1] / maxCount) * 100 : 0;
+          el.style.height = h + '%';
+          el.style.background = colors[seg[0]];
+          el.title = splitLabels[seg[0]] + ' ' + (i * binPx) + '-' + ((i + 1) * binPx) + 'px: ' + fmtNum(seg[1]);
+          col.appendChild(el);
+        });
+        histEl.appendChild(col);
+      }
+      // boundary markers at 32px and 96px
+      [32, 96].forEach(function(px) {
+        var pos = (px / (nBins * binPx)) * 100;
+        if (pos <= 100) {
+          var b = document.createElement('div');
+          b.className = 'hist-boundary';
+          b.style.left = pos + '%';
+          var lbl = document.createElement('span');
+          lbl.className = 'boundary-label';
+          lbl.textContent = px + 'px';
+          b.appendChild(lbl);
+          histEl.appendChild(b);
+        }
+      });
+      var axisLbl = document.createElement('span');
+      axisLbl.className = 'hist-axis-label';
+      axisLbl.textContent = '0px';
+      histEl.appendChild(axisLbl);
+    }
+    renderHist();
+
+    document.getElementById('histToggle').addEventListener('click', function(e) {
+      var btn = e.target.closest('.chip[data-hist]');
+      if (!btn) return;
+      var sp = btn.dataset.hist;
+      var nowOn = btn.getAttribute('aria-pressed') !== 'true';
+      histState[sp] = nowOn;
+      btn.setAttribute('aria-pressed', String(nowOn));
+      renderHist();
+    });
+
+    /* Chart 4: density per split */
+    var densityEl = document.getElementById('densityChart');
+    densityEl.innerHTML = '';
+    var maxMean = 0;
+    splitOrder.forEach(function(sp) { maxMean = Math.max(maxMean, stats.splits[sp].mean_ped); });
+    splitOrder.forEach(function(sp) {
+      var d = stats.splits[sp];
+      var col = document.createElement('div');
+      col.className = 'density-col';
+
+      var bar = document.createElement('div');
+      bar.className = 'density-bar';
+      bar.style.height = ((d.mean_ped / maxMean) * 100) + '%';
+      bar.style.background = sp === 'test' ? sColor : (sp === 'val' ? mColor : lColor);
+      var val = document.createElement('span');
+      val.className = 'bar-val';
+      val.textContent = d.mean_ped.toFixed(2);
+      bar.appendChild(val);
+      col.appendChild(bar);
+
+      var label = document.createElement('span');
+      label.className = 'col-label';
+      label.textContent = splitLabels[sp];
+      col.appendChild(label);
+
+      densityEl.appendChild(col);
+    });
+
+    /* Chart 5: day/night sampling */
+    var dn = window.DAYNIGHT_DATA || [];
+    var legendEl = document.getElementById('daynightLegend');
+    if (legendEl) {
+      var nDay = dn.filter(function(s) { return s.classification === 'day'; }).length;
+      var nNight = dn.length - nDay;
+      legendEl.innerHTML =
+        '<span class="legend-item"><i style="background:' + mColor + '"></i>Day (' + nDay + '/' + dn.length + ')</span>' +
+        '<span class="legend-item"><i style="background:' + lColor + '"></i>Night (' + nNight + '/' + dn.length + ')</span>';
+    }
+    var dnGrid = document.getElementById('daynightGrid');
+    if (dnGrid) {
+      dnGrid.innerHTML = '';
+      dn.forEach(function(s) {
+        var card = document.createElement('div');
+        card.className = 'daynight-card';
+
+        var img = document.createElement('img');
+        img.src = s.rgb;
+        img.alt = s.classification + ' sample, ' + s.file;
+        card.appendChild(img);
+
+        var meta = document.createElement('div');
+        meta.className = 'daynight-card-meta';
+
+        var tag = document.createElement('span');
+        tag.className = 'daynight-tag ' + s.classification;
+        var dot = document.createElement('i');
+        tag.appendChild(dot);
+        tag.appendChild(document.createTextNode(s.classification));
+        meta.appendChild(tag);
+
+        var row = document.createElement('div');
+        row.className = 'daynight-meta-row';
+        row.innerHTML = '<span>' + s.file + '</span><span>&mu;=' + s.mean_intensity.toFixed(1) + '</span>';
+        meta.appendChild(row);
+
+        card.appendChild(meta);
+        dnGrid.appendChild(card);
+      });
+    }
+  }
+
+  /* ---------- MODEL RESULTS TAB ---------- */
+  var MODEL_RESULTS = [
+    { name: 'Baseline QFDet (fused)', mAP: 0.299, mAP50: 0.674, mAP75: 0.227, mAP_S: 0.129, mAP_M: 0.299, mAP_L: 0.554, fps: 11.30, ms: 88.48, sizeMB: 485.11, paramsM: 60.18, flopsG: 162.86, best: true },
+    { name: 'Thermal-only (RGB zeroed)', mAP: 0.232, mAP50: 0.547, mAP75: 0.166, mAP_S: 0.080, mAP_M: 0.225, mAP_L: 0.538, fps: 11.46, ms: 87.24, sizeMB: 485.11, paramsM: 60.18, flopsG: 162.86 },
+    { name: 'RGB-only (thermal zeroed)', mAP: 0.042, mAP50: 0.191, mAP75: 0.003, mAP_S: 0.020, mAP_M: 0.050, mAP_L: 0.074, fps: 11.46, ms: 87.24, sizeMB: 485.11, paramsM: 60.18, flopsG: 162.86 },
+  ];
+
+  function renderModelResults() {
+    var tbody = document.querySelector('#modelResultsTable tbody');
+    tbody.innerHTML = '';
+    MODEL_RESULTS.forEach(function(row) {
+      var tr = document.createElement('tr');
+      var nameCell = '<td style="text-align:left' + (row.best ? ';color:var(--thermal);font-weight:600' : '') + '">' + row.name + '</td>';
+      tr.innerHTML = nameCell +
+        '<td>' + row.mAP.toFixed(3) + '</td>' +
+        '<td>' + row.mAP50.toFixed(3) + '</td>' +
+        '<td>' + row.mAP75.toFixed(3) + '</td>' +
+        '<td>' + row.mAP_S.toFixed(3) + '</td>' +
+        '<td>' + row.mAP_M.toFixed(3) + '</td>' +
+        '<td>' + row.mAP_L.toFixed(3) + '</td>' +
+        '<td>' + row.fps.toFixed(2) + '</td>' +
+        '<td>' + row.ms.toFixed(1) + '</td>' +
+        '<td>' + row.sizeMB.toFixed(1) + '</td>' +
+        '<td>' + row.paramsM.toFixed(2) + '</td>' +
+        '<td>' + row.flopsG.toFixed(2) + '</td>';
+      tbody.appendChild(tr);
+    });
+  }
+})();
+</script>

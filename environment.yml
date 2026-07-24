@@ -1,0 +1,11 @@
+# conda env create -f environment.yml
+# Then finish install per README.md (torch/mmcv-full need CUDA-specific wheel URLs
+# that don't fit cleanly in a conda spec — see README.md Setup step 2).
+name: qfdet
+channels:
+  - defaults
+dependencies:
+  - python=3.9
+  - pip
+  - pip:
+      - -r requirements.txt
