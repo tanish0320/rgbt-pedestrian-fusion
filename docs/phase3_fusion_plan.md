@@ -60,20 +60,27 @@ sub-pixel small objects), and what's explicitly *not* changed (backbone architec
 `base_fusion='cat'` combination rule, loss functions) to keep the change auditable against
 the baseline. Target: `reports/phase3_fusion_strategy.md`.
 
-### 3. Modified network architecture — not started
-Concrete changes, in order of implementation:
-- [ ] New config `qfdet_configs/qfdet_r50_fpn_p2_vtuav.py` (copy of the baseline eval/train
-  config): `neck.start_level=0`, `neck.num_outs=6`, `bbox_head.anchor_generator.strides` and
-  `bbox_prehead.anchor_generator.strides` extended to `[4,8,16,32,64,128]`.
-- [ ] Modality-dropout: extend `ZeroModality` (already in
-  `mmdet/datasets/pipelines/multispectral_transforms.py`) or add a sibling
-  `RandomModalityDropout` training-time transform that stochastically attenuates (not fully
-  zeroes) one stream per training sample, at low-to-moderate probability — reuse
-  `RandomMasking`'s existing pattern in the same file rather than writing new plumbing.
-- [ ] Re-tune `test_cfg.nms_pre` upward from 1000 given the anchor-count increase; verify
-  empirically rather than guessing a value.
-- [ ] Confirm batch size / memory headroom on the 4060 before a full run (short 1-epoch
-  smoke test first).
+### 3. Modified network architecture — DONE
+- [x] New config `qfdet_configs/qfdet_r50_fpn_p2_vtuav.py`: `neck.start_level=0`,
+  `neck.num_outs=6`, both heads' `anchor_generator.strides` extended to
+  `[4,8,16,32,64,128]`.
+- [x] Modality dropout: found `RandomMasking` already existed in
+  `mmdet/datasets/pipelines/multispectral_transforms.py` (unused by the baseline config,
+  registered/exported already) — does exactly what was planned (random RGB-zero/thermal-zero/
+  both-real per training step), so no new transform code was needed. Wired into
+  `train_pipeline` at `p=(0.15, 0.15, 0.7)`, positioned before `MultiNormalize` (zeroing
+  after normalization would produce a nonzero-mean tensor, not true black, since the
+  configured means are ~83-135, not 0 — verified against `img_norm_cfg`).
+- [x] `test_cfg.nms_pre` raised 1000→2000 pending real precision/recall data from a full eval.
+- [x] Smoke-tested (5 real train steps, `tools/smoke_test_p2.py`): peak VRAM **4,446 MB** of
+  8.59GB available (RTX 4060 Laptop) — comfortable headroom, no batch-size reduction needed.
+  ~0.8s/step after warmup → ~8 min/epoch at 600 iters, so 6 epochs ≈ 50 min, feasible.
+  Loss dropped 178.9→33.6 over 5 steps (reinitialized layers responding to gradient, healthy
+  sign, not itself proof of final quality).
+- [x] Checkpoint-load mismatch confirmed exactly as predicted: 3 lateral convs +
+  `atss_cls`/`bbox_prehead.atss_cls` reinitialize (index-shift + num_classes reasons,
+  documented in the config's own docstring), P2's new layers (`lateral_convs.3`,
+  `fpn_convs.5`, `scales.5`) missing from checkpoint as expected — no surprises, no crash.
 
 ### 4. Training methodology — not started
 - [ ] Fine-tune from `checkpoints/qfdet_vtuav_pretrained.pth` (never from scratch — required
@@ -97,10 +104,22 @@ Concrete changes, in order of implementation:
 - [ ] Add a Model Results-style table to `reports/explorer/index.html`'s dashboard once
   numbers exist, matching the Phase 2 pattern already built there.
 
-### 6. Ablation study — optional / stretch, not committed
-If time remains after 1–5 are solid: an isolation run with P2 fusion but *without* the
-modality-dropout training change, to separate what each half of the strategy contributes to
-the mAP_S delta. Not scoped further until 1–5 are done.
+### 6. Ablation study — upgraded from stretch to active, using the 2 extra RTX 3050 laptops
+Two isolation runs in parallel with Person 1's full `fusion_v1` run, splitting the strategy's
+two changes apart to see what each contributes:
+- [x] Configs written: `qfdet_r50_fpn_p2_only_vtuav.py` (P2 alone, no dropout),
+  `qfdet_r50_fpn_dropout_only_vtuav.py` (dropout alone, no P2). Each differs from
+  `qfdet_r50_fpn_p2_vtuav.py` by exactly one variable — verified via direct diff before
+  handoff, not assumed.
+- [x] `p2_only` smoke-tested on the 4060 (3 steps, clean checkpoint-load, no crash).
+- [ ] `dropout_only` smoke test — not yet run before handoff, Person 3's doc asks them to
+  verify it themselves and flag anything unexpected rather than debug silently.
+- [ ] Both full training runs (Person 2, Person 3 — `docs/person2_ablation_p2_only.md`,
+  `docs/person3_ablation_dropout_only.md`).
+- [ ] Person 3's run should also re-evaluate RGB-only/thermal-only on their fine-tuned
+  checkpoint (via the existing `ZeroModality` eval configs) — directly checks whether
+  modality dropout closed Phase 2's 7×/29% collapse gap, arguably the most informative
+  single number this ablation produces.
 
 ## Definition of done
 Phase 3 is complete when: the diagram exists, the strategy write-up exists, the modified

@@ -74,13 +74,13 @@ Local RTX 4060 (8.59GB VRAM confirmed). `conda` env `qfdet` (torch 1.10.0+cu113)
 - [x] Baseline QFDet running end-to-end (safety net) — done as part of Phase 2, same checkpoint (`checkpoints/qfdet_vtuav_pretrained.pth`) serves as Phase 3's fine-tuning starting point.
 - [ ] Fusion architecture diagram
 - [ ] Fusion strategy write-up (`reports/phase3_fusion_strategy.md`)
-- [ ] Modified config (`qfdet_configs/qfdet_r50_fpn_p2_vtuav.py`) — P2 fusion + modality dropout
-- [ ] Smoke test (1 epoch) for VRAM/`nms_pre` tuning before a full run
+- [x] Modified config (`qfdet_configs/qfdet_r50_fpn_p2_vtuav.py`) — P2 fusion + modality dropout. Found `RandomMasking` already existed in the repo (unused), reused it instead of writing new code.
+- [x] Smoke test (5 real train steps, `tools/smoke_test_p2.py`) — peak VRAM 4,446MB/8.59GB (comfortable), ~0.8s/step (~50min for a 6-epoch run), checkpoint-load mismatches exactly as predicted, no crashes.
 - [ ] Fusion v1 fine-tuned from pretrained checkpoint, saved to `checkpoints/qfdet_fusion_v1.pth`
 - [ ] Fusion v1 evaluated on val + test, `results/metrics.csv` rows added
 - [ ] Fusion v1 vs. baseline mAP_S comparison written up (`reports/phase3_experimental_results.md`)
 - [ ] Dashboard updated with fusion-v1 row (`reports/explorer/`)
-- [ ] (Optional, stretch) Ablation: P2 fusion without modality dropout, to isolate each half's contribution
+- [ ] Ablation study — upgraded from stretch to active, using 2 extra RTX 3050 laptops in parallel. Configs written + `p2_only` smoke-tested; `dropout_only` awaits first run. Handoff docs: `docs/person2_ablation_p2_only.md`, `docs/person3_ablation_dropout_only.md`. Person 1's doc (`docs/YOU_person1_fusion.md`) updated to reflect current state and fold-in plan.
 
 ## Phase 4 — Evaluation & Comparison (20%)
 - [ ] Inference run: all checkpoints × val + test
