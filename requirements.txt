@@ -8,3 +8,7 @@ gdown
 pycocotools
 matplotlib
 terminaltables
+# yapf>=0.40 dropped FormatCode's `verify` kwarg, which mmcv==1.6.1's Config.pretty_text
+# still passes — breaks tools/train.py (and anything calling cfg.dump()) with
+# "TypeError: FormatCode() got an unexpected keyword argument 'verify'". Pin below avoids it.
+yapf==0.32.0

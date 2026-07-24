@@ -192,7 +192,14 @@ load_from = '../../checkpoints/qfdet_vtuav_pretrained.pth'
 # already-converged checkpoint plus new P2-level layers; revisit after the smoke test
 optimizer = dict(type='SGD', lr=0.0025, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=dict(_delete_=True, max_norm=35, norm_type=2))
-fp16 = dict(loss_scale=512.)
+# fp16 deliberately NOT enabled: QFDet.forward() uses mmcv's legacy @auto_fp16
+# decorator (casts only the img input), which is incompatible with the newer
+# Fp16OptimizerHook/GradScaler this fp16=dict(...) setting would trigger — mixing the two
+# causes "RuntimeError: Found dtype Float but expected Half" during backward. Found by
+# actually running tools/train.py, not by inspection (the earlier smoke test never
+# exercised Fp16OptimizerHook at all, since it used a plain optimizer.step() call directly).
+# We have comfortable VRAM headroom without fp16 (smoke test: 4.4GB/8.59GB), so training in
+# full fp32 rather than debugging mmcv's fp16 plumbing.
 runner = dict(type='EpochBasedRunner', max_epochs=6)  # short fine-tune; extend if time allows
 
 work_dir = '../../checkpoints/train_qfdet_p2_only'

@@ -186,9 +186,15 @@ def main():
     # init the meta dict to record some important information such as
     # environment info and seed, which will be logged
     meta = dict()
-    # log env info
-    env_info_dict = collect_env()
-    env_info = '\n'.join([(f'{k}: {v}') for k, v in env_info_dict.items()])
+    # log env info — collect_env() probes for a C++ compiler via distutils, which fails
+    # hard on Windows without MSVC installed (this project intentionally has no MSVC
+    # toolchain, using prebuilt mmcv-full wheels instead — see docs/YOU_person1_fusion.md).
+    # This is diagnostic-only output, not needed for training, so don't let it abort a run.
+    try:
+        env_info_dict = collect_env()
+        env_info = '\n'.join([(f'{k}: {v}') for k, v in env_info_dict.items()])
+    except Exception as e:
+        env_info = f'(collect_env failed, skipped: {e})'
     dash_line = '-' * 60 + '\n'
     logger.info('Environment info:\n' + dash_line + env_info + '\n' +
                 dash_line)

@@ -49,8 +49,15 @@ model = dict(
         frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=True),
         norm_eval=True,
-        style='pytorch',
-        init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),
+        style='pytorch'),
+        # no init_cfg here — this is a fine-tuning run (load_from below loads the real
+        # pretrained QFDet checkpoint over the whole model, backbone included). The
+        # original baseline config's torchvision://resnet50 init_cfg was for training from
+        # ImageNet; keeping it here would download+load ImageNet weights into the backbone
+        # first for no reason (load_from overwrites them immediately after), and on this
+        # machine that download hard-crashes anyway (Windows cert-store SSL error, unrelated
+        # to CUDA/mmcv — a separate, unresolved local networking quirk, not worth fixing
+        # since the download isn't needed at all for a fine-tuning run).
     neck=dict(
         type='FPN',
         in_channels=[256, 512, 1024, 2048],
@@ -200,7 +207,14 @@ load_from = '../../checkpoints/qfdet_vtuav_pretrained.pth'
 # already-converged checkpoint plus new P2-level layers; revisit after the smoke test
 optimizer = dict(type='SGD', lr=0.0025, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=dict(_delete_=True, max_norm=35, norm_type=2))
-fp16 = dict(loss_scale=512.)
+# fp16 deliberately NOT enabled: QFDet.forward() uses mmcv's legacy @auto_fp16
+# decorator (casts only the img input), which is incompatible with the newer
+# Fp16OptimizerHook/GradScaler this fp16=dict(...) setting would trigger — mixing the two
+# causes "RuntimeError: Found dtype Float but expected Half" during backward. Found by
+# actually running tools/train.py, not by inspection (the earlier smoke test never
+# exercised Fp16OptimizerHook at all, since it used a plain optimizer.step() call directly).
+# We have comfortable VRAM headroom without fp16 (smoke test: 4.4GB/8.59GB), so training in
+# full fp32 rather than debugging mmcv's fp16 plumbing.
 runner = dict(type='EpochBasedRunner', max_epochs=6)  # short fine-tune; extend if time allows
 
 work_dir = '../../checkpoints/train_qfdet_fusion_v1'

@@ -61,7 +61,12 @@ class RandomMasking:
         mode = random.choice(sample_mode, p=self.p)
         if mode == 0 or mode == 1:
             key = results.get('img_fields', ['img1', 'img2'])[mode]
-            results[key] = np.zeros(results[key].shape)
+            # dtype must match the source array (uint8 at this pipeline stage, before
+            # normalization) — np.zeros() defaults to float64, which silently changes the
+            # array's dtype and causes a "Found dtype Float but expected Half" crash deep in
+            # fp16 backward once it propagates through MultiNormalize/ToTensor. Found by
+            # actually running fp16 training with this transform enabled, not by inspection.
+            results[key] = np.zeros(results[key].shape, dtype=results[key].dtype)
         return results
 
 
