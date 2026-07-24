@@ -20,7 +20,7 @@ jobs:
         password: ${{ secrets.CR_PAT }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Install mmdet dependencies
         run: |
           git clone https://github.com/open-mmlab/mmcv.git && cd mmcv
